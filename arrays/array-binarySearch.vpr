@@ -1,0 +1,165 @@
+import "/Users/wi/Documents/eth/phd_proj/comps/repo/generic/comp.vpr"
+import "count_val.vpr"
+
+domain Array {
+    function loc(a: Array, i: Int): Ref
+    function len(a: Array): Int
+
+    axiom array_length {
+      forall a: Array :: { len(a) } len(a) >= 0
+    }
+
+    axiom array_injectivity {
+      true  
+      && ( forall a: Array, i: Int, j: Int :: { loc(a,i), loc(a,j) } 0 <= i && i < j && j < len(a) ==> loc(a,i) != loc(a,j) )
+      && ( forall a: Array, i: Int, j: Int :: { loc(a,i), loc(a,j) } loc(a,i) == loc(a,j) <==> i == j )
+    }
+}
+
+
+define isArray(a)
+  forall z: Int :: { loc(a,z).val } 0 <= z && z < len(a) ==> acc(loc(a,z).val)
+
+
+define isReadOnlyArray(a, p)
+  forall z: Int :: { loc(a,z).val } 0 <= z && z < len(a) ==> acc(loc(a,z).val, p)
+
+
+function a2s(a: Array): Seq[Int]
+  requires isArray(a)
+  ensures |result| == len(a)
+  ensures  forall i: Int :: 
+    { loc(a,i).val } 
+    { result[i] } 
+        0 <= i && i < len(a) ==> result[i] == loc(a,i).val
+
+
+function a2sp(a: Array): Seq[Int]
+//   requires none < p && p < write
+  requires isReadOnlyArray(a, wildcard)
+  ensures |result| == len(a)
+  ensures  forall i: Int :: 
+    { loc(a,i).val }
+    { result[i] }
+        0 <= i && i < len(a) ==> result[i] == loc(a,i).val
+
+
+field val: Int
+method binarySearch_v1(a: Array, /*target: Int,*/ lo: Int, hi: Int) 
+    returns (res: Bool)
+
+    requires 0 <= lo && lo <= hi && hi <= len(a)
+    requires isArray(a)
+    ensures isArray(a)
+    ensures a2s(a) == old(a2s(a))  // the procedure does not modify the array
+    ensures count(old(a2s(a)), lo, hi) > 0 <==> res
+{
+    if (lo == hi) {
+        res := false
+    } elseif (lo+1 == hi) {
+        res := (loc(a,lo).val == 0/*target*/)
+    } else {
+        // 0  1  2  3  4  5
+        // [] [] [] [] [] []
+        //    lo pi    hi
+        //    lo    pi    hi
+        var pivot: Int := (hi + lo) \ 2
+        var res1: Bool 
+        var res2: Bool
+        res1 := binarySearch_v1(a, /*target,*/ lo, pivot)
+        res2 := binarySearch_v1(a, /*target,*/ pivot, hi)
+
+        res := (res1 || res2)
+
+        // assert count(old(a2s(a)), lo, hi) > 0 ==> res1 || res2
+
+
+        // assert count(old(a2s(a)), lo, pivot) > 0 <==> res1
+        // assert count(old(a2s(a)), pivot, hi) > 0 <==> res2
+
+        // assert res1 || res2 ==> 
+        //     (count(old(a2s(a)), lo, pivot) + count(old(a2s(a)), pivot, hi)) > 0
+        
+        // assert res1 || res2 ==> count(old(a2s(a)), lo, hi) > 0
+
+    }
+}
+
+method binarySearch_v2(a: Array, /*target: Int,*/ lo: Int, hi: Int, p: Perm)
+    returns (res: Bool)
+
+    requires 0 <= lo && lo <= hi && hi <= len(a)
+    requires none < p && p < write
+    requires isReadOnlyArray(a, p)
+    ensures isReadOnlyArray(a, p)
+    // ensures a2sp(a) == old(a2sp(a))  // the procedure does not modify the array
+    ensures count(old(a2sp(a)), lo, hi) > 0 <==> res
+{
+    if (lo == hi) {
+        res := false
+    } elseif (lo+1 == hi) {
+        res := (loc(a,lo).val == 0/*target*/)
+    } else {
+        // 0  1  2  3  4  5
+        // [] [] [] [] [] []
+        //    lo pi    hi
+        //    lo    pi    hi
+        var pivot: Int := (hi + lo) \ 2
+        var res1: Bool 
+        var res2: Bool
+
+        res1 := binarySearch_v2(a, /*target,*/ lo, pivot, p/2)
+        res2 := binarySearch_v2(a, /*target,*/ pivot, hi, p/2)
+
+        res := (res1 || res2)
+    }
+}
+
+method binarySearch_v3(a: Array, /*target: Int,*/ lo: Int, hi: Int, p: Perm)
+    returns (res: Bool)
+
+    requires 0 <= lo && lo <= hi && hi <= len(a)
+    requires none < p && p < write
+    requires isReadOnlyArray(a, p)
+    ensures isReadOnlyArray(a, p)
+    // ensures a2sp(a) == old(a2sp(a))  // the procedure does not modify the array
+    ensures count(old(a2sp(a)), lo, hi) > 0 <==> res
+{
+    if (lo == hi) {
+        res := false
+    } elseif (lo+1 == hi) {
+        res := (loc(a,lo).val == 0/*target*/)
+    } else {
+        // 0  1  2  3  4  5
+        // [] [] [] [] [] []
+        //    lo pi    hi
+        //    lo    pi    hi
+        var pivot_a: Int := (  hi + 2*lo) \ 3
+        var pivot_b: Int := (2*hi +   lo) \ 3
+        
+        var res1: Bool 
+        var res2: Bool
+        var res3: Bool
+
+        // assert 
+        assert lo <= pivot_a
+        res1 := binarySearch_v2(a, /*target,*/ lo, pivot_a, p/2)
+        res2 := binarySearch_v2(a, /*target,*/ pivot_a, pivot_b, p/2)
+        res3 := binarySearch_v2(a, /*target,*/ pivot_b, hi, p/2)
+
+        res := (res1 || res2 || res3)
+
+        // assert count(old(a2sp(a)), lo, hi) == 
+        //         count(old(a2sp(a)), lo, pivot_a) + count(old(a2sp(a)), pivot_a, hi)
+        // assert count(old(a2sp(a)), pivot_a, hi) == 
+        //         count(old(a2sp(a)), pivot_a, pivot_b) + count(old(a2sp(a)), pivot_b, hi)
+        // assert count(old(a2sp(a)), lo, hi) == 
+        //         count(old(a2sp(a)), lo, pivot_a) + 
+        //         count(old(a2sp(a)), pivot_a, pivot_b) + 
+        //         count(old(a2sp(a)), pivot_b, hi)
+        // assert count(old(a2sp(a)), lo, hi) > 0 ==> res  // not ok
+        // assert res ==> count(old(a2sp(a)), lo, hi) > 0  // ok
+        // assert count(old(a2sp(a)), lo, hi) > 0 <==> res
+        // assert false
+    }
+}

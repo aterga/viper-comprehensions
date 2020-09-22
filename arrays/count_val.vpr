@@ -1,0 +1,91 @@
+domain CountVal {
+    // public interfaces
+    function count(a: Seq[Int], lo: Int, hi: Int): Int
+
+    // private interfaces
+    function acount(a: Seq[Int], lo: Int, hi: Int): Int
+    function __count_filter__(a: Seq[Int], k: Int): Bool
+    function __count_term__(a: Seq[Int], k: Int): Int
+    function __count_induct__(x: Int, y: Int): Int
+    function __count_custom_term__(f_i: Int, g: Seq[Int]): Seq[Int]
+
+    axiom count_term {
+        forall a: Seq[Int], k: Int :: { __count_term__(a, k) } __count_term__(a, k) == 1
+    }
+
+    axiom count_filter {
+        forall a: Seq[Int], k: Int :: { __count_filter__(a, k) } __count_filter__(a, k) == (a[k] == 0)
+    }
+
+    axiom count_induct {
+        forall x: Int, y: Int :: { __count_induct__(x, y) } __count_induct__(x, y) == x + y
+    }
+
+    axiom count_synonim {
+        forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } count(a, lo, hi) == acount(a, lo, hi)
+    }
+
+    axiom count_induction_below {
+        true
+        && ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi &&  __count_filter__(a, lo) ==> acount(a, lo, hi) == __count_induct__(acount(a, lo+1, hi), __count_term__(a, lo)) )
+        && ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi && !__count_filter__(a, lo) ==> acount(a, lo, hi) == acount(a, lo+1, hi) )
+    }
+
+    axiom count_induction_above {
+        true
+        && ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi &&  __count_filter__(a, hi-1) ==> acount(a, lo, hi) == __count_induct__(acount(a, lo, hi-1), __count_term__(a, hi-1)) )
+        && ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi && !__count_filter__(a, hi-1) ==> acount(a, lo, hi) == acount(a, lo, hi-1) )
+    }
+
+    axiom count_induction_both {
+        true
+        //&& ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi &&  __count_filter__(a, lo) &&  __count_filter__(a, hi-1) ==> acount(a, lo, hi) == acount(a, lo+1, hi-1) + __count_term__(a, lo) + __count_term__(a, hi-1) )
+        //&& ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi && !__count_filter__(a, lo) &&  __count_filter__(a, hi-1) ==> acount(a, lo, hi) == acount(a, lo+1, hi-1) +                      __count_term__(a, hi-1) )
+        //&& ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi &&  __count_filter__(a, lo) && !__count_filter__(a, hi-1) ==> acount(a, lo, hi) == acount(a, lo+1, hi-1) + __count_term__(a, lo) )
+        //&& ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi && !__count_filter__(a, lo) && !__count_filter__(a, hi-1) ==> acount(a, lo, hi) == acount(a, lo+1, hi-1) )
+    }
+
+    axiom count_unit {
+        forall a: Seq[Int], lo: Int, hi: Int :: { acount(a, lo, hi) }
+            ( forall k: Int :: lo <= k && k < hi && __count_filter__(a, k) ==> __count_term__(a, k) == 0 )
+            ==>
+            acount(a, lo, hi) == 0
+    }
+
+    axiom count_split_range {
+        forall a: Seq[Int], lo: Int, mid: Int, hi: Int ::
+            { count(a, lo, mid), count(a, mid, hi) }
+            { count(a, lo, mid), count(a, lo,  hi) }
+                lo <= mid && mid <= hi ==>
+                    __count_induct__(acount(a,lo,mid), acount(a,mid,hi)) == acount(a,lo,hi)
+    }
+
+    /*
+    axiom count_same_term {
+        forall a: Seq[Int], b: Seq[Int], lo: Int, hi: Int ::
+            { count(a, lo, hi), acount(b, lo, hi) }
+                ( forall k: Int ::
+                    { __count_term__(a, k), __count_term__(b, k) }
+                    { __count_filter__(a, k), __count_filter__(b, k) }
+                        lo <= k && k < hi ==>
+                            ( __count_filter__(a, k) ==  __count_filter__(b, k) ) &&
+                            ( __count_filter__(a, k) ==> __count_term__(a, k) == __count_term__(b, k) )
+                ) ==>
+                acount(a, lo, hi) == acount(b, lo, hi)
+    }*/
+
+    // encode nested count-countrehension
+
+    axiom count_custom_term {
+        forall f_i: Int, g: Seq[Int], j: Int ::
+            { __count_custom_term__(f_i, g)[j] }
+                (__count_custom_term__(f_i, g)[j] != 0) <==> f_i == g[j]
+    }
+
+    axiom count_nonneg {
+        forall a: Seq[Int], lo: Int, hi: Int :: 
+            { count(a, lo, hi) }
+                count(a, lo, hi) >= 0
+    }
+}
+

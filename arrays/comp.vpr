@@ -1,0 +1,84 @@
+domain Comp {
+	function comp(type: Int, a: Seq[Int], lo: Int, hi: Int): Int
+	function    c(type: Int, a: Seq[Int], lo: Int, hi: Int): Int
+
+	function __filter__(type: Int, a: Seq[Int], k: Int): Bool
+	function __term__(type: Int, a: Seq[Int], k: Int): Int
+	function __induct__(type: Int, x: Int, y: Int): Int
+
+	unique function __comp_type_sum__(): Int
+	unique function __comp_type_count__(): Int
+	//unique function __comp_type_count_neg__(): Int
+	unique function __comp_type_min__(): Int
+	unique function __comp_type_max__(): Int
+
+	function __is_sum__(type: Int): Bool
+	function __is_count__(type: Int): Bool
+	//function __is_count_neg__(type: Int): Bool
+	function __is_min__(type: Int): Bool
+	function __is_max__(type: Int): Bool
+
+	axiom comp_type {
+		true
+		&& ( forall t: Int :: { __is_sum__(t) }       __is_sum__(t)       <==> t == __comp_type_sum__() )
+		&& ( forall t: Int :: { __is_count__(t) }     __is_count__(t)     <==> t == __comp_type_count__() )
+		//&& ( forall t: Int :: { __is_count_neg__(t) } __is_count_neg__(t) <==> t == __comp_type_count_neg__() )
+		&& ( forall t: Int :: { __is_min__(t) }       __is_min__(t)       <==> t == __comp_type_min__() )
+		&& ( forall t: Int :: { __is_max__(t) }       __is_max__(t)       <==> t == __comp_type_max__() )
+	}
+
+	axiom comp_synonim {
+		forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } comp(t, a, lo, hi) == c(t, a, lo, hi)
+	}
+
+	/* This axiom significantly slows down Silicon in its generic form.
+	axiom comp_unit {
+		forall t: Int, a: Seq[Int], lo: Int, hi: Int ::
+			{ c(t, a, lo, hi) }
+				(forall k: Int ::
+					{ __term__(t, a, k) }
+					//{ __filter__(t, a, k) }
+					lo <= k && k < hi && __filter__(t, a, k) ==> __term__(t, a, k) == 0) ==>
+					c(t, a, lo, hi) == 0
+	}*/
+
+axiom comp_induction_below {
+	true
+	&& ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi &&  __filter__(t, a, lo) ==> c(t, a, lo, hi) == __induct__(t, c(t, a, lo+1, hi), __term__(t, a, lo)) )
+	&& ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi && !__filter__(t, a, lo) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi) )
+}
+
+axiom comp_induction_above {
+	true
+	&& ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi &&  __filter__(t, a, hi-1) ==> c(t, a, lo, hi) == __induct__(t, c(t, a, lo, hi-1), __term__(t, a, hi-1)) )
+	&& ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi && !__filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo, hi-1) )
+}
+
+axiom comp_induction_both {
+	true
+	//&& ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi &&  __filter__(t, a, lo) &&  __filter__(t, a, hi-1) ==> c(t, a, lo, hi) == __induct__( t, __induct__( t, c(t, a, lo+1, hi-1), __term__(t, a, lo) ) + __term__(t, a, hi-1) ) )
+	&& ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi && !__filter__(t, a, lo) &&  __filter__(t, a, hi-1) ==> c(t, a, lo, hi) == __induct__( t, c(t, a, lo+1, hi-1),                      __term__(t, a, hi-1) ) )
+	&& ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi &&  __filter__(t, a, lo) && !__filter__(t, a, hi-1) ==> c(t, a, lo, hi) == __induct__( t, c(t, a, lo+1, hi-1), __term__(t, a, lo) ) )
+	//&& ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi && !__filter__(t, a, lo) && !__filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi-1) )
+}
+
+	axiom comp_split_range {
+		forall t: Int, a: Seq[Int], lo: Int, mid: Int, hi: Int ::
+			{ comp(t, a, lo, mid), comp(t, a, mid, hi) }
+			{ comp(t, a, lo, mid), comp(t, a, lo,  hi) }
+				lo <= mid && mid <= hi ==>
+					__induct__(t, c(t,a,lo,mid), c(t,a,mid,hi)) == c(t,a,lo,hi)
+	}
+
+	axiom comp_same_term {
+		forall t: Int, a: Seq[Int], b: Seq[Int], lo: Int, hi: Int ::
+			{ comp(t, a, lo, hi), c(t, b, lo, hi) }
+			( forall k: Int ::
+				{ __term__(t, a, k), __term__(t, b, k) }
+				{ __filter__(t, a, k), __filter__(t, b, k) }
+					lo <= k && k < hi ==>
+						  __filter__(t, a, k) == __filter__(t, b, k) &&
+						( __filter__(t, a, k) ==> __term__(t, a, k) == __term__(t, b, k) ) )
+			==> c(t, a, lo, hi) == c(t, b, lo, hi)
+	}
+}
