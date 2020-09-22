@@ -60,6 +60,14 @@ domain CountVal {
                     __count_induct__(acount(a,lo,mid), acount(a,mid,hi)) == acount(a,lo,hi)
     }
 
+    axiom count_trans {
+        forall a: Seq[Int], b: Seq[Int], lo_a: Int, hi_a: Int, lo_b: Int, hi_b: Int :: 
+            { count(a, lo_a, hi_a), count(b, lo_b, hi_b) }
+                hi_a == |a| && lo_b == 0 ==>
+                    count(a, lo_a, hi_a) + count(b, lo_b, hi_b) 
+                    == acount(a++b, lo_a, hi_a+hi_b)
+    }
+
     /*
     axiom count_same_term {
         forall a: Seq[Int], b: Seq[Int], lo: Int, hi: Int ::

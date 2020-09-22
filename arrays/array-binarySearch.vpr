@@ -1,4 +1,4 @@
-import "/Users/wi/Documents/eth/phd_proj/comps/repo/generic/comp.vpr"
+// import "comp.vpr"
 import "count_val.vpr"
 
 domain Array {
@@ -20,6 +20,8 @@ domain Array {
 define isArray(a)
   forall z: Int :: { loc(a,z).val } 0 <= z && z < len(a) ==> acc(loc(a,z).val)
 
+define ArrayRange(a, lo, hi)
+  forall z: Int :: { loc(a,z).val } lo <= z && z < hi ==> acc(loc(a,z).val, wildcard)
 
 define isReadOnlyArray(a, p)
   forall z: Int :: { loc(a,z).val } 0 <= z && z < len(a) ==> acc(loc(a,z).val, p)
@@ -48,7 +50,7 @@ field val: Int
 method binarySearch_v1(a: Array, /*target: Int,*/ lo: Int, hi: Int) 
     returns (res: Bool)
 
-    requires 0 <= lo && lo <= hi && hi <= len(a)
+    requires 0 <= lo && lo <= hi && hi < len(a)
     requires isArray(a)
     ensures isArray(a)
     ensures a2s(a) == old(a2s(a))  // the procedure does not modify the array
@@ -85,10 +87,84 @@ method binarySearch_v1(a: Array, /*target: Int,*/ lo: Int, hi: Int)
     }
 }
 
+
+function a2s_range(a: Array, lo: Int, hi: Int): Seq[Int]
+  requires ArrayRange(a, lo, hi)
+  requires 0 <= lo && lo <= hi && hi < len(a)
+  ensures |result| == hi - lo
+  ensures  forall i: Int :: 
+    { loc(a,i).val } 
+        lo <= i && i < hi ==> result[i-lo] == loc(a,i).val
+//   ensures  forall i: Int :: 
+//     // { loc(a,i).val } 
+//     { result[i] } 
+//         0 <= i && i < hi-lo ==> result[i] == loc(a,i+lo).val
+
+define count_all(a, lo, hi)
+    count(a2s_range(a, lo, hi), 0, hi-lo)
+
+
+method binarySearch_v1_a(a: Array, /*target: Int,*/ lo: Int, hi: Int) 
+    returns (res: Bool)
+
+    requires 0 <= lo && lo <= hi && hi < len(a)
+    requires ArrayRange(a, lo, hi)
+    ensures ArrayRange(a, lo, hi)
+    // ensures a2s_range(a, lo, hi) == old(a2s_range(a, lo, hi))
+    ensures count_all(a, lo, hi) > 0 <==> res
+{
+    if (lo == hi) {
+        res := false
+    } elseif (lo+1 == hi) {
+        res := (loc(a,lo).val == 0/*target*/)
+    } else {
+        // 0  1  2  3  4  5
+        // [] [] [] [] [] []
+        //    lo pi    hi
+        //    lo    pi    hi
+        var pivot: Int := (hi + lo) \ 2
+        var res1: Bool 
+        var res2: Bool
+        res1 := binarySearch_v1_a(a, /*target,*/ lo, pivot)
+
+        // assert res1 ==> count(a2s_range(a, lo, pivot), 0, pivot-lo) > 0
+        res2 := binarySearch_v1_a(a, /*target,*/ pivot, hi)
+        // assert a2s_range(a, lo, hi) == old(a2s_range(a, lo, hi))
+        // assert res1 ==> count(a2s_range(a, lo, pivot), 0, pivot-lo) > 0
+        // assert res2 ==> count(a2s_range(a, pivot, hi), 0, hi-pivot) > 0
+
+        res := (res1 || res2)
+
+        // assert res ==> count(a2s_range(a, lo, pivot), 0, pivot-lo) > 0 || count(a2s_range(a, pivot, hi), 0, hi-pivot) > 0
+
+        // assert |a2s_range(a, lo, pivot)| == pivot-lo
+        // assert |a2s_range(a, pivot, hi)| == hi-pivot
+        // assert |a2s_range(a, lo, pivot)| + |a2s_range(a, pivot, hi)| == |a2s_range(a, lo, hi)|
+        // assert |a2s_range(a, lo, hi)| == hi-lo
+        assume a2s_range(a, lo, pivot) ++ a2s_range(a, pivot, hi) == a2s_range(a, lo, hi) // problematic bit
+        
+        
+        // var aa: Seq[Int] := a2s_range(a, lo, pivot)
+        // var bb: Seq[Int] := a2s_range(a, pivot, hi)
+        // // assert 
+        // assert count(aa, 0, |aa|) + 
+        //        count(bb, 0, |bb|) ==
+        //         count(aa++bb, 0, hi-lo)
+
+
+        // pivot-lo   - 0 + hi-pivot == hi - lo
+
+        // assume a2s_range(a, lo, hi) == old(a2s_range(a, lo, hi))
+
+        // assert res ==> count_all(a, lo, hi) > 0
+        // assert false
+    }
+}
+
 method binarySearch_v2(a: Array, /*target: Int,*/ lo: Int, hi: Int, p: Perm)
     returns (res: Bool)
 
-    requires 0 <= lo && lo <= hi && hi <= len(a)
+    requires 0 <= lo && lo <= hi && hi < len(a)
     requires none < p && p < write
     requires isReadOnlyArray(a, p)
     ensures isReadOnlyArray(a, p)
@@ -118,7 +194,7 @@ method binarySearch_v2(a: Array, /*target: Int,*/ lo: Int, hi: Int, p: Perm)
 method binarySearch_v3(a: Array, /*target: Int,*/ lo: Int, hi: Int, p: Perm)
     returns (res: Bool)
 
-    requires 0 <= lo && lo <= hi && hi <= len(a)
+    requires 0 <= lo && lo <= hi && hi < len(a)
     requires none < p && p < write
     requires isReadOnlyArray(a, p)
     ensures isReadOnlyArray(a, p)
