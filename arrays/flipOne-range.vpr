@@ -1,0 +1,192 @@
+define ACCESS(xs, p)
+  (forall i: Int :: 0 <= i && i < |xs| ==> acc(xs[i].val, p))
+
+domain Range {
+    function range(lo: Int, hi: Int): Range
+    function range_lo(r: Range): Int
+    function range_hi(r: Range): Int
+
+    axiom ax_range {
+        forall lo: Int, hi: Int ::
+            { range(lo, hi) }
+                lo == range_lo(range(lo, hi)) &&
+                hi == range_hi(range(lo, hi))
+    }
+
+
+}
+
+// method test_range(ra: Range, rb: Range)
+// {
+//     var i: Int
+//     var j: Int
+//     assume ra == range
+// }
+
+domain Min {
+    // function min_comp(xs: Seq[Int], lo: Int, hi: Int): Int
+    function min_comp(xs: Seq[Int], r: Range): Int
+
+    function __abs__(x: Int): Int
+    function __min__(x: Int, y: Int): Int
+    function __min_filter__(a: Seq[Int], k: Int): Bool
+    function __min_term__(a: Seq[Int], k: Int): Int
+    function __min_induct__(x: Int, y: Int): Int
+
+    axiom ax_abs {
+
+        forall x: Int :: {  __abs__(x) }
+            __abs__(x) == (x >= 0 ? x : -x)
+    }
+
+	axiom min_scalar {
+		forall x: Int, y: Int :: { __min__(x,y) } (__min__(x,y) == x || __min__(x,y) == y) && __min__(x,y) <= x && __min__(x,y) <= y
+	}
+
+	axiom min_term {
+		forall a: Seq[Int], k: Int :: { __min_term__(a,k) } __min_term__(a,k) == a[k]
+	}
+
+	axiom min_filter {
+		forall a: Seq[Int], k: Int :: { __min_filter__(a,k) } __min_filter__(a,k) == true
+	}
+
+	axiom min_induct {
+		forall x: Int, y: Int :: { __min_induct__(x,y) } __min_induct__(x,y) == __min__(x,y)
+	}
+
+    axiom min_same_term {
+        forall a: Seq[Int], b: Seq[Int], r: Range/*lo: Int, hi: Int*/ ::
+            // { min_comp(a, lo, hi), min_comp(b, lo, hi) }
+            { min_comp(a, r), min_comp(b, r) }
+                ( forall k: Int ::
+                    { __min_term__(a, k), __min_term__(b, k) }
+                    { __min_filter__(a, k), __min_filter__(b, k) }
+                        range_lo(r) <= k && k < range_hi(r) ==>
+                            ( __min_filter__(a, k) ==  __min_filter__(b, k) ) &&
+                            ( __min_filter__(a, k) ==> __min_term__(a, k) == __min_term__(b, k) )
+                ) ==>
+                min_comp(a, r) == min_comp(b, r)
+    }
+
+    axiom min_induction_below {
+        forall a: Seq[Int], r: Range/*lo: Int, hi: Int*/ :: 
+            // { min_comp(a, lo, hi) } 
+            { min_comp(a, r) }
+                let lo==(range_lo(r)) in 
+                    (let hi==(range_hi(r)) in (lo < hi &&  __min_filter__(a, lo) ==> min_comp(a, r) == __min_induct__(min_comp(a, range(lo+1,hi)), __min_term__(a, lo))))
+    }
+
+    // axiom min_induction_above {
+    //     forall a: Seq[Int], lo: Int, hi: Int :: 
+    //         { min_comp(a, lo, hi) } 
+    //             lo < hi &&  __min_filter__(a, lo) ==> min_comp(a, lo, hi) == __min_induct__(min_comp(a, lo, hi-1), __min_term__(a, hi-1))
+    // }
+
+    axiom min_split_range {
+        forall a: Seq[Int], lo: Int, mid: Int, hi: Int ::
+            // { min_comp(a, lo, mid), min_comp(a, mid, hi) }
+            // { min_comp(a, lo, mid), min_comp(a, lo,  hi) }
+            { min_comp(a, range(lo, mid)), min_comp(a, range(mid, hi)) }
+            { min_comp(a, range(lo, mid)), min_comp(a, range(lo, hi)) }
+                lo <= mid && mid <= hi ==>
+                    __min_induct__(min_comp(a,range(lo, mid)), min_comp(a,range(mid, hi))) == min_comp(a,range(lo, hi))
+    }
+}
+
+domain HelloUnsound {
+    function hello_unsound(): Bool
+    axiom us {
+        !hello_unsound()
+    }
+}
+
+domain DummyTriggers {
+    function __trig_val__(v: Int): Bool
+    function __trig_range__(r: Range): Bool
+}
+
+function indexOf(x: Ref, xs: Seq[Ref]): Int
+    requires x in xs
+    ensures 0 <= result && result < |xs| 
+    ensures xs[result] == x
+
+function lift(rs: Seq[Ref]): Seq[Int]
+  requires forall i: Int :: 
+    { rs[i].val }
+        0 <= i && i < |rs| ==> acc(rs[i].val, wildcard)
+  ensures |result| == |rs|
+  ensures forall i: Int :: 
+    { rs[i].val }
+    { result[i] }
+        0 <= i && i < |rs| ==> result[i] == rs[i].val
+  ensures forall xs: Seq[Ref], ys: Seq[Ref] :: 
+    xs ++ ys == rs ==> result == lift(xs) ++ lift(ys)
+  ensures forall x: Ref :: 
+    { x in rs }
+    { x.val }
+        x in rs ==> __trig_val__(min_comp(result, range(0, indexOf(x, rs))) ) //exists xi: Int :: 0 <= xi && xi < |rs| && rs[xi] == x && rs[xi].val == result[xi]
+
+define min(xs) min_comp(lift(xs), range(0, |lift(xs)|))
+
+field val: Int
+method flipOne(xs: Seq[Ref], x: Ref, m: Int)
+    requires ACCESS(xs, write)
+    requires x in xs
+    requires m == min(xs) && m >= 0
+{
+    x.val := -1 * m
+
+    if (true) {  // calculation
+        var i: Int
+        
+        var len: Int := |lift(xs)|
+        assume 0 <= i && i < |xs| && x == xs[i]
+
+        // var z: Int
+        // assume 0 <= z && z <= i
+        // assume __trig_val__(min_comp(lift(xs), 0, indexOf(x, xs) ))
+        
+        // 1
+        // assert min_comp(lift(xs), range(0, i)) == old(min_comp(lift(xs), range(0, i)))
+        // 2
+        // assert min_comp(lift(xs), i, len) <= min_comp(lift(xs), i+1, len)
+        // 3
+        // assert min_comp(lift(xs), 0, len) == __min_induct__(min_comp(lift(xs), 0, i), min_comp(lift(xs), i, len))
+        // // 4 
+        // assert min_comp(old(lift(xs)), i, len) == __min_induct__(old(x.val), min_comp(old(lift(xs)), i+1, len))
+
+        // assume m <= 0
+        // assume old(x.val) > old(min(xs))
+        
+        // assert x.val == -1 * m
+        // assert x.val >= 0
+        // assert m <= old(x.val)
+        // assert x.val == -1 * m
+        // assert 0 <= -1 * m
+        // assert 0 <= x.val
+        // assert -1 * m <= old(min(xs))
+        // assert x.val <= old(x.val)
+        // assert min_comp(old(lift(xs)), i, len) >= min_comp(lift(xs), i, len)
+
+        // assert min_comp(old(lift(xs)), 0, len) == __min_induct__(min_comp(old(lift(xs)), 0, i), min_comp(old(lift(xs)), i, len))
+        // assert old(min_comp(lift(xs), 0, len)) == min_comp(old(lift(xs)), 0, len)
+        // assert min_comp(lift(xs), 0, len) <= old(min_comp(lift(xs), 0, len))
+        // assert min(xs) <= __abs__(old(min(xs)))
+        
+        // assume m < 0
+        // assert min_comp(lift(xs), range(0, i)) == min_comp(old(lift(xs)), range(0, i))
+        // assert min_comp(lift(xs), range(i+1, |xs|)) == min_comp(old(lift(xs)), range(i+1, |xs|))
+
+        // // scenario I -- works
+        // // assume -m <= min_comp(lift(xs), range(i+1, |xs|))
+        // // assume -m <= min_comp(lift(xs), range(0, i))
+
+        // // scenario II -- ?
+        // assume min_comp(lift(xs), range(i+1, |xs|)) <= -m 
+        // assume min_comp(lift(xs), range(i+1, |xs|)) <= min_comp(lift(xs), range(0, i))
+
+        assert min(xs) == -m
+        // assert false
+    }
+}
