@@ -1,0 +1,65 @@
+// import "comp.vpr"
+import "count_val-param.vpr"
+import "array.vpr"
+
+
+field val: Int
+
+
+define ArraySegment(a, lo, hi, p) 
+    ArraySegmentForField(a, lo, hi, p, val)
+
+
+function lift(a: Array, lo: Int, hi: Int): Seq[Int]
+  requires ArraySegment(a, lo,hi, wildcard)
+  requires 0 <= lo && lo <= hi && hi < len(a)
+  ensures |result| == hi - lo
+  ensures  forall i: Int :: 
+    { loc(a,i).val } 
+        lo <= i && i < hi ==> result[i-lo] == loc(a,i).val
+
+  ensures forall mid: Int :: 
+    { lift(a, lo, mid) }
+    { lift(a, mid, hi) }
+        lo <= mid && mid < hi ==> lift(a, lo, mid) ++ lift(a, mid, hi) == result
+//   ensures  forall i: Int :: 
+//     // { loc(a,i).val } 
+//     { result[i] } 
+//         0 <= i && i < hi-lo ==> result[i] == loc(a,i+lo).val
+
+define count_all(p, a, lo, hi)
+    count(p, lift(a, lo, hi), 0, hi-lo)
+
+
+
+
+
+method replaceAll(a: Array, from: Int, to: Int, 
+        lo: Int, hi: Int, p: Perm)
+
+    requires 0 <= lo && lo <= hi && hi < len(a)
+    requires ArraySegment(a, lo, hi, write)
+    ensures ArraySegment(a, lo, hi, write)
+    // ensures a2s_range(a, lo, hi) == old(a2s_range(a, lo, hi))
+    ensures from != to ==> count_all(from, a, lo, hi) == 0
+    ensures old(count_all(from, a, lo, hi)) <= count_all(to, a, lo, hi)
+{
+    if (lo+1 == hi) {
+        if (loc(a,lo).val == from) {
+            loc(a,lo).val := to
+        }
+    } elseif (lo != hi) {
+        var piv: Int := (hi + lo) \ 2
+        var res1: Bool 
+        var res2: Bool
+
+        replaceAll(a, from, to, lo, piv, p/2)
+        replaceAll(a, from, to, piv, hi, p/2)
+        // assert lift(a, lo, piv) ++ lift(a, piv, hi) == lift(a, lo, hi)
+    }
+}
+
+
+// assume a2s_range(a, lo, piv) ++ 
+// a2s_range(a, piv, hi) == 
+// a2s_range(a, lo, hi) // problematic bit
