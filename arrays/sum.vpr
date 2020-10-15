@@ -1,0 +1,108 @@
+domain Sum {
+    // public interfaces
+    function sum(a: Seq[Int], lo: Int, hi: Int): Int
+    function sumSeqHi(a: Seq[Int], hi: Int): Seq[Int]
+    function sumSeqSeq_(a: Seq[Int]): Seq[Seq[Int]]
+
+    // private interfaces
+    function sum_(a: Seq[Int], lo: Int, hi: Int): Int
+    function __sum_filter__(a: Seq[Int], k: Int): Bool
+    function __sum_term__(a: Seq[Int], k: Int): Int
+    function __sum_induct__(x: Int, y: Int): Int
+    function __sum_custom_term__(f_i: Int, g: Seq[Int]): Seq[Int]
+
+    axiom sum_term {
+        forall a: Seq[Int], k: Int :: { __sum_term__(a, k) } __sum_term__(a, k) == a[k]
+    }
+
+    axiom sum_filter {
+        forall a: Seq[Int], k: Int :: { __sum_filter__(a, k) } __sum_filter__(a, k) == true
+    }
+
+    axiom sum_induct {
+        forall x: Int, y: Int :: { __sum_induct__(x, y) } __sum_induct__(x, y) == x + y
+    }
+
+    axiom sum_synonim {
+        forall a: Seq[Int], lo: Int, hi: Int :: { sum(a, lo, hi) } sum(a, lo, hi) == sum_(a, lo, hi)
+    }
+
+    axiom sum_induction_below {
+        true
+        && ( forall a: Seq[Int], lo: Int, hi: Int :: { sum(a, lo, hi) } lo < hi &&  __sum_filter__(a, lo) ==> sum_(a, lo, hi) == __sum_induct__(sum_(a, lo+1, hi), __sum_term__(a, lo)) )
+        // && ( forall a: Seq[Int], lo: Int, hi: Int :: { sum(a, lo, hi) } lo < hi && !__sum_filter__(a, lo) ==> sum_(a, lo, hi) == sum_(a, lo+1, hi) )
+    }
+
+    axiom sum_induction_above {
+        true
+        && ( forall a: Seq[Int], lo: Int, hi: Int :: { sum(a, lo, hi) } lo < hi &&  __sum_filter__(a, hi-1) ==> sum_(a, lo, hi) == __sum_induct__(sum_(a, lo, hi-1), __sum_term__(a, hi-1)) )
+        // && ( forall a: Seq[Int], lo: Int, hi: Int :: { sum(a, lo, hi) } lo < hi && !__sum_filter__(a, hi-1) ==> sum_(a, lo, hi) == sum_(a, lo, hi-1) )
+    }
+
+    // axiom sum_induction_both {
+    //     true
+    //     //&& ( forall a: Seq[Int], lo: Int, hi: Int :: { sum(a, lo, hi) } lo < hi &&  __sum_filter__(a, lo) &&  __sum_filter__(a, hi-1) ==> sum_(a, lo, hi) == sum_(a, lo+1, hi-1) + __sum_term__(a, lo) + __sum_term__(a, hi-1) )
+    //     && ( forall a: Seq[Int], lo: Int, hi: Int :: { sum(a, lo, hi) } lo < hi && !__sum_filter__(a, lo) &&  __sum_filter__(a, hi-1) ==> sum_(a, lo, hi) == sum_(a, lo+1, hi-1) +                      __sum_term__(a, hi-1) )
+    //     && ( forall a: Seq[Int], lo: Int, hi: Int :: { sum(a, lo, hi) } lo < hi &&  __sum_filter__(a, lo) && !__sum_filter__(a, hi-1) ==> sum_(a, lo, hi) == sum_(a, lo+1, hi-1) + __sum_term__(a, lo) )
+    //     //&& ( forall a: Seq[Int], lo: Int, hi: Int :: { sum(a, lo, hi) } lo < hi && !__sum_filter__(a, lo) && !__sum_filter__(a, hi-1) ==> sum_(a, lo, hi) == sum_(a, lo+1, hi-1) )
+    // }
+
+    // axiom sum_unit {
+    //     forall a: Seq[Int], lo: Int, hi: Int :: { sum_(a, lo, hi) }
+    //         ( forall k: Int :: {__sum_term__(a, k)} lo <= k && k < hi && __sum_filter__(a, k) ==> __sum_term__(a, k) == 0 )
+    //         ==>
+    //         sum_(a, lo, hi) == 0
+    // }
+
+    axiom sum_split_range {
+        forall a: Seq[Int], lo: Int, mid: Int, hi: Int ::
+            { sum(a, lo, mid), sum(a, mid, hi) }
+            { sum(a, lo, mid), sum(a, lo,  hi) }
+                lo <= mid && mid <= hi ==>
+                    __sum_induct__(sum_(a,lo,mid), sum_(a,mid,hi)) == sum_(a,lo,hi)
+    }
+
+    axiom sum_trans_1 {
+        forall a: Seq[Int], b: Seq[Int], lo_a: Int, hi_a: Int, lo_b: Int, hi_b: Int :: 
+            { sum(a, lo_a, hi_a), sum(b, lo_b, hi_b) }
+                hi_a == |a| && lo_b == 0 ==>
+                    sum_(a, lo_a, hi_a) + sum_(b, lo_b, hi_b) 
+                    == sum_(a++b, lo_a, hi_a+hi_b)
+    }
+
+    axiom sum_trans_2 {
+        forall a: Seq[Int], b: Seq[Int], lo_a: Int, hi_c: Int :: 
+            { sum(a++b, lo_a, hi_c) }
+                sum(a, lo_a, |a|) + sum_(b, 0, hi_c - |a|) 
+                == sum_(a++b, lo_a, hi_c)
+    }
+
+    axiom sum_same_term {
+        forall a: Seq[Int], b: Seq[Int], lo: Int, hi: Int ::
+            { sum(a, lo, hi), sum_(b, lo, hi) }
+                ( forall k: Int ::
+                    { __sum_term__(a, k), __sum_term__(b, k) }
+                    { __sum_filter__(a, k), __sum_filter__(b, k) }
+                        lo <= k && k < hi ==>
+                            ( __sum_filter__(a, k) ==  __sum_filter__(b, k) ) &&
+                            ( __sum_filter__(a, k) ==> __sum_term__(a, k) == __sum_term__(b, k) )
+                ) ==>
+                sum_(a, lo, hi) == sum_(b, lo, hi)
+    }
+
+    // encode nested sum-sumrehension
+
+    axiom sum_seq_hi {
+        forall a: Seq[Int], i: Int, hi: Int ::
+            { sumSeqHi(a,hi)[i] }
+                sumSeqHi(a,hi)[i] == sum(a,i,hi)
+    }
+
+    // first index: hi, second index: lo
+    axiom sum_seq_seq_prime_2 {
+        forall a: Seq[Int], hi: Int ::
+            { sumSeqSeq_(a)[hi] }
+                sumSeqSeq_(a)[hi] == sumSeqHi(a,hi)
+    }
+}
+

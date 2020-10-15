@@ -70,6 +70,14 @@ axiom comp_induction_both {
 					__induct__(t, c(t,a,lo,mid), c(t,a,mid,hi)) == c(t,a,lo,hi)
 	}
 
+    axiom comp_trans {
+        forall t: Int, a: Seq[Int], b: Seq[Int], lo_a: Int, hi_a: Int, lo_b: Int, hi_b: Int :: 
+            { comp(t, a, lo_a, hi_a), comp(t, b, lo_b, hi_b) }
+                hi_a == |a| && lo_b == 0 ==>
+                    comp(t, a, lo_a, hi_a) + comp(t, b, lo_b, hi_b) 
+                    == c(t, a++b, lo_a, hi_a+hi_b)
+    }
+
 	axiom comp_same_term {
 		forall t: Int, a: Seq[Int], b: Seq[Int], lo: Int, hi: Int ::
 			{ comp(t, a, lo, hi), c(t, b, lo, hi) }

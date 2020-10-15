@@ -1,0 +1,21 @@
+domain Array {
+    function loc(a: Array, i: Int): Ref
+    function len(a: Array): Int
+    function first(r: Ref): Array
+    function second(r: Ref): Int
+    function concat(a: Array, b: Array): Array
+
+    axiom array_length {
+      forall a: Array :: { len(a) } len(a) >= 0
+    }
+
+    axiom array_injectivity {
+      forall a: Array, i: Int :: 
+        { loc(a, i) }
+            a == first(loc(a, i)) && 
+            i == second(loc(a, i))
+    }
+}
+
+define ArraySegmentForField(a,lo,hi,p,   $fi) 
+  forall z: Int :: lo <= z && z < hi ==> acc(loc(a,z).$fi, p)

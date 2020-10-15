@@ -1,112 +1,126 @@
-domain Comp {
+// domain Comp {
 
-  function comp(type: Int, a: Seq[Int], lo: Int, hi: Int): Int
-  function    c(type: Int, a: Seq[Int], lo: Int, hi: Int): Int
+//   function comp(type: Int, a: Seq[Int], lo: Int, hi: Int): Int
+//   function    c(type: Int, a: Seq[Int], lo: Int, hi: Int): Int
 
-  function __filter__(type: Int, a: Seq[Int], k: Int): Bool
-  function   __term__(type: Int, a: Seq[Int], k: Int): Int
+//   function __filter__(type: Int, a: Seq[Int], k: Int): Bool
+//   function   __term__(type: Int, a: Seq[Int], k: Int): Int
 
-  unique function __comp_type_sum__(): Int
-  unique function __comp_type_count__(): Int
+//   unique function __comp_type_sum__(): Int
+//   unique function __comp_type_count__(): Int
 
-  function __is_sum__(type: Int): Bool
-  function __is_count__(type: Int): Bool
+//   function __is_sum__(type: Int): Bool
+//   function __is_count__(type: Int): Bool
 
-  axiom comp_type {
-    true
-    && ( forall t: Int :: { __is_sum__(t) }   __is_sum__(t)   <==> t == __comp_type_sum__() )
-    && ( forall t: Int :: { __is_count__(t) } __is_count__(t) <==> t == __comp_type_count__() )
-  }
-
-  axiom comp_synonim {
-    forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } comp(t, a, lo, hi) == c(t, a, lo, hi)
-  }
-
-  axiom comp_unit {
-    forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { c(t, a, lo, hi) }
-      (forall k: Int ::
-        //{ __term__(t, a, k) }
-        lo <= k && k < hi && __filter__(t, a, k) ==> __term__(t, a, k) == 0) ==>
-    c(t, a, lo, hi) == 0
-  }
-
-  axiom comp_induction_below {
-    true
-    && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi &&  __filter__(t, a, lo) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi) + __term__(t, a, lo) )
-    && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi && !__filter__(t, a, lo) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi) )
-  }
-
-  axiom comp_induction_above {
-    true
-    && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi &&  __filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo, hi-1) + __term__(t, a, hi-1) )
-    && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi && !__filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo, hi-1) )
-  }
-  
-  /*
-  axiom comp_induction_triplet {
-    true 
-    && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } 
-            forall mid: Int ::  
-                lo <= mid && mid < hi &&  __filter__(t, a, mid) ==> c(t, a, lo, hi) == c(t, a, lo, mid) + __term__(t, a, mid) + c(t, a, mid+1, hi) )
-    && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } 
-            forall mid: Int ::  
-                lo <= mid && mid < hi && !__filter__(t, a, mid) ==> c(t, a, lo, hi) == c(t, a, lo, mid) +                     + c(t, a, mid+1, hi) )
-
-  }*/
-  
-//   axiom comp_induction_both {
+//   axiom comp_type {
 //     true
-//     //&& ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi &&  __filter__(t, a, lo) &&  __filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi-1) + __term__(t, a, lo) + __term__(t, a, hi-1) )
-//     && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi && !__filter__(t, a, lo) &&  __filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi-1) +                      __term__(t, a, hi-1) )
-//     && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi &&  __filter__(t, a, lo) && !__filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi-1) + __term__(t, a, lo) )
-//     //&& ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi && !__filter__(t, a, lo) && !__filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi-1) )
+//     && ( forall t: Int :: { __is_sum__(t) }   __is_sum__(t)   <==> t == __comp_type_sum__() )
+//     && ( forall t: Int :: { __is_count__(t) } __is_count__(t) <==> t == __comp_type_count__() )
 //   }
 
-  axiom comp_split_range {
-    forall t: Int, a: Seq[Int], lo: Int, mid: Int, hi: Int ::
-      { comp(t, a, lo, mid), comp(t, a, mid, hi) }
-      { comp(t, a, lo, mid), comp(t, a, lo,  hi) }
-        lo <= mid && mid <= hi ==>
-          c(t, a, lo, mid) + c(t, a, mid, hi) == c(t, a, lo, hi)
-  }
+//   axiom comp_synonim {
+//     forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } comp(t, a, lo, hi) == c(t, a, lo, hi)
+//   }
+
+// //   axiom comp_unit {
+// //     forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { c(t, a, lo, hi) }
+// //       (forall k: Int ::
+// //         { __term__(t, a, k) }
+// //         lo <= k && k < hi && __filter__(t, a, k) ==> __term__(t, a, k) == 0) ==>
+// //     c(t, a, lo, hi) == 0
+// //   }
+
+//   axiom comp_induction_below {
+//     true
+//     && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi &&  __filter__(t, a, lo) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi) + __term__(t, a, lo) )
+//     && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi && !__filter__(t, a, lo) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi) )
+//   }
+
+//   axiom comp_induction_above {
+//     true
+//     && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi &&  __filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo, hi-1) + __term__(t, a, hi-1) )
+//     && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi && !__filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo, hi-1) )
+//   }
+  
+//   /*
+//   axiom comp_induction_triplet {
+//     true 
+//     && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } 
+//             forall mid: Int ::  
+//                 lo <= mid && mid < hi &&  __filter__(t, a, mid) ==> c(t, a, lo, hi) == c(t, a, lo, mid) + __term__(t, a, mid) + c(t, a, mid+1, hi) )
+//     && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } 
+//             forall mid: Int ::  
+//                 lo <= mid && mid < hi && !__filter__(t, a, mid) ==> c(t, a, lo, hi) == c(t, a, lo, mid) +                     + c(t, a, mid+1, hi) )
+
+//   }*/
+  
+// //   axiom comp_induction_both {
+// //     true
+// //     //&& ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi &&  __filter__(t, a, lo) &&  __filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi-1) + __term__(t, a, lo) + __term__(t, a, hi-1) )
+// //     && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi && !__filter__(t, a, lo) &&  __filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi-1) +                      __term__(t, a, hi-1) )
+// //     && ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi &&  __filter__(t, a, lo) && !__filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi-1) + __term__(t, a, lo) )
+// //     //&& ( forall t: Int, a: Seq[Int], lo: Int, hi: Int :: { comp(t, a, lo, hi) } lo < hi && !__filter__(t, a, lo) && !__filter__(t, a, hi-1) ==> c(t, a, lo, hi) == c(t, a, lo+1, hi-1) )
+// //   }
+
+//   axiom comp_split_range {
+//     forall t: Int, a: Seq[Int], lo: Int, mid: Int, hi: Int ::
+//       { comp(t, a, lo, mid), comp(t, a, mid, hi) }
+//       { comp(t, a, lo, mid), comp(t, a, lo,  hi) }
+//         lo <= mid && mid <= hi ==>
+//           c(t, a, lo, mid) + c(t, a, mid, hi) == c(t, a, lo, hi)
+//   }
     
   
-  axiom comp_same_term {
-    forall t: Int, a: Seq[Int], b: Seq[Int], lo: Int, hi: Int ::
-      { comp(t, a, lo, hi), c(t, b, lo, hi) }
-        ( forall k: Int ::
-          { __term__(t, a, k), __term__(t, b, k) }
-          { __filter__(t, a, k), __filter__(t, b, k) }
-          lo <= k && k < hi ==>
-           __filter__(t, a, k) == __filter__(t, b, k) &&
-         ( __filter__(t, a, k) ==> __term__(t, a, k) == __term__(t, b, k) ) )
-          ==> c(t, a, lo, hi) == c(t, b, lo, hi)
-  }
-}
+//   axiom comp_same_term {
+//     forall t: Int, a: Seq[Int], b: Seq[Int], lo: Int, hi: Int ::
+//       { comp(t, a, lo, hi), c(t, b, lo, hi) }
+//         ( forall k: Int ::
+//           { __term__(t, a, k), __term__(t, b, k) }
+//           { __filter__(t, a, k), __filter__(t, b, k) }
+//           lo <= k && k < hi ==>
+//            __filter__(t, a, k) == __filter__(t, b, k) &&
+//          ( __filter__(t, a, k) ==> __term__(t, a, k) == __term__(t, b, k) ) )
+//           ==> c(t, a, lo, hi) == c(t, b, lo, hi)
+//   }
+// }
 
-domain Count {
-  function count(a: Seq[Int], lo: Int, hi: Int): Int
+// domain Count {
+//   function count(2, a: Seq[Int], lo: Int, hi: Int): Int
 
-  axiom count_term {
-    forall t: Int, a: Seq[Int], k: Int :: { __term__(t, a, k) } __is_count__(t) ==> __term__(t, a, k) == 1
-  }
+//   axiom count_term {
+//     forall t: Int, a: Seq[Int], k: Int :: { __term__(t, a, k) } __is_count__(t) ==> __term__(t, a, k) == 1
+//   }
 
-  axiom count_filter {
-    forall t: Int, a: Seq[Int], k: Int :: { __filter__(t, a, k) } __is_count__(t) ==> __filter__(t, a, k) == (a[k] == 2)
-  }
+//   axiom count_filter {
+//     forall t: Int, a: Seq[Int], k: Int :: { __filter__(t, a, k) } __is_count__(t) ==> __filter__(t, a, k) == (a[k] == 2)
+//   }
 
-  axiom count_comp {
-    forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } count(a, lo, hi) == comp(__comp_type_count__(), a, lo, hi)
-  }
+//   axiom count_comp {
+//     forall a: Seq[Int], lo: Int, hi: Int :: { count(2, a, lo, hi) } count(2, a, lo, hi) == comp(__comp_type_count__(), a, lo, hi)
+//   }
 
-}
+// }
 
-// import "count_val.vpr"
+import "count_val-param.vpr"
 field val: Int
 
 domain Array {
     function loc(a: Array, i: Int): Ref
     function len(a: Array): Int
+    function first(r: Ref): Array
+    function second(r: Ref): Int
+    function concat(a: Array, b: Array): Array
+
+    axiom array_length {
+      forall a: Array :: { len(a) } len(a) >= 0
+    }
+
+    axiom array_injectivity {
+      forall a: Array, i: Int :: 
+        { loc(a, i) }
+            a == first(loc(a, i)) && 
+            i == second(loc(a, i))
+    }
 }
 
 method swap(a: Array, i: Int, j: Int)
@@ -140,20 +154,26 @@ function lift(a: Array): Seq[Int]
     { result[i] }
         0 <= i && i < len(a) ==> result[i] == loc(a,i).val
 //   ensures forall i: Int :: 
-//     { loc(a,i) }
+//     { loc(a,i).val }
 //         0 <= i && i < len(a) ==>
-//             __trig_val__(count( result, 0, i) ) //exists xi: Int :: 0 <= xi && 
+//             __trig_val__(count(2,  result, 0, i) ) //exists xi: Int :: 0 <= xi && 
 
 define isArray(a)
   forall z: Int :: { loc(a,z).val } 0 <= z && z < len(a) ==> acc(loc(a,z).val)
 
-define count_all(a) count(lift(a), 0, len(a))
 
-define c_filt(a, i) __filter__(__comp_type_count__(), lift(a), i)
-define c_term(a, i) __term__(__comp_type_count__(), lift(a), i)
+define GOAL(v, a) 
+    count(v, lift(a), 0, len(a)) == old(count(v, lift(a), 0, len(a)))
 
-method sort012(a: Array)
-    requires len(a) > 0
+
+define INV(v, a, lo, mid, hi)
+    (count(v, lift(a),0,lo) + count(v, lift(a),lo,mid) + count(v, lift(a),mid,len(a)) == count(v, lift(a),0,len(a)))
+    && (lo+1<=mid ==> count(v, lift(a),0,lo+1) + count(v, lift(a),lo+1,mid) + count(v, lift(a),mid,len(a)) == count(v, lift(a),0,len(a)))
+    && (mid<hi ==> count(v, lift(a),0,mid+1) + count(v, lift(a),mid+1,hi+1) + count(v, lift(a),hi+1,len(a)) == count(v, lift(a),0,len(a)))
+
+method sort012(a: Array, magic_val: Int)
+    requires 0 <= magic_val && magic_val <= 1
+    requires len(a) >= 0
     requires isArray(a)
     requires forall z: Int :: 
         { loc(a,z).val } 
@@ -162,34 +182,52 @@ method sort012(a: Array)
     ensures isArray(a)
     // ensures forall y: Int, z: Int :: {loc(a,y).val, loc(a,z).val} 0 <= y && y < z && z < len(a) ==> loc(a,y).val <= loc(a,z).val
     
-    ensures count_all(a) == old(count_all(a))
+    ensures GOAL(magic_val, a)
+    // ensures GOAL(1, a)
+    // ensures GOAL(2, a)
 {
 	var lo: Int := 0
     var mid: Int := 0
 	var hi: Int := len(a) - 1
     
 	while (mid < hi)
-        invariant 0 <= lo && lo <= mid && mid <= hi + 1 && hi < len(a)
+        invariant 0 <= lo && lo <= mid && mid <= hi+1 && hi < len(a)
         
-        invariant forall z: Int :: {loc(a,z).val} 0 <= z && z < len(a) ==> acc(loc(a,z).val)
+        invariant isArray(a)
         invariant forall z: Int :: {loc(a,z).val} 0 <= z && z < len(a) ==> (0 <= loc(a,z).val && loc(a,z).val <= 2)
         
         invariant forall z: Int :: {loc(a,z).val} 0 <= z && z < lo ==> loc(a,z).val == 0
         invariant forall z: Int :: {loc(a,z).val} lo <= z && z < mid ==> loc(a,z).val == 1
         invariant forall z: Int :: {loc(a,z).val} hi+1 <= z && z < len(a) ==> loc(a,z).val == 2
         
-        invariant count(lift(a),0,lo) + count(lift(a),lo,mid) + count(lift(a),mid,hi+1) + count(lift(a),hi+1,len(a)) == count(lift(a),0,len(a))
-        invariant count(lift(a),0,len(a)) == old(count(lift(a),0,len(a)))
         
-        // invariant let s == (lift(a)) in count(s,0,lo) + count(s,lo,hi+1) + count(s,hi+1,len(a)) == count(s,0,len(a))  
+        // invariant count(2, lift(a),0,lo) + count(2, lift(a),lo,mid) + count(2, lift(a),mid,hi+1) + count(2, lift(a),hi+1,len(a)) == count(2, lift(a),0,len(a))
+        invariant INV(magic_val, a, lo, mid, hi)
+        invariant GOAL(magic_val, a)
+        
+        // invariant let s == (lift(a)) in count(2, s,0,lo) + count(2, s,lo,hi+1) + count(2, s,hi+1,len(a)) == count(2, s,0,len(a))  
         
 	{
-        assume loc(a,mid).val == 2
+        // assume loc(a,mid).val == 0   
 		if (loc(a,mid).val == 0)
 	    {
+            // assume false
+            // label l1
+            // var my_count: Int := count(2, lift(a),0,lo)
+
             swap(a, lo, mid)
+
+            // assert count(1, lift(a),0,len(a)) == count(1, lift(a),0,lo) + count(1, lift(a),lo,len(a))
+            // assert count(1, lift(a),lo,len(a)) == (lift(a)[lo] == 1 ? 1 : 0) + count(1, lift(a),lo+1,len(a))
+            // assert count(1, lift(a),lo+1,len(a)) == count(1, lift(a),lo+1,mid) + count(1, lift(a),mid,len(a))
+            // assert count(1, lift(a),mid,len(a)) == (lift(a)[mid] == 1 ? 1 : 0) + count(1, lift(a),mid+1,len(a))
+
             lo := lo + 1
             mid := mid + 1
+            
+            // assert count(2, lift(a),0,lo) == my_count
+            // assert count(2, lift(a),0,lo) == old[l1]( count(2, lift(a),0,lo) )
+            // assert count(2, lift(a),lo,len(a)) == count(2, lift(a),lo,lo+1) + count(2, lift(a),lo+1,len(a))
         }
 	    elseif (loc(a,mid).val == 1) 
         {
@@ -197,34 +235,34 @@ method sort012(a: Array)
 	    }
         elseif (loc(a,mid).val == 2)
         {
-
-            label pre
+            // assume false
+            // label pre
 
             // var s: Seq[Int] := lift(a)
-            // var pre_count: Int := count(s, 0, |s|)
+            // var pre_count: Int := count(2, s, 0, |s|)
             swap(a, mid, hi)
             
-            // assume count(lift(a),0,lo) == old(count(lift(a),0,lo))
-            // assume count(lift(a),hi+1,len(a)) == old(count(lift(a),hi+1,len(a)))
-            // assume count(lift(a),lo,mid) == old(count(lift(a),lo,mid))
-            // assume count(lift(a),mid,hi+1) == old(count(lift(a),mid,hi+1))
+            // assume count(2, lift(a),0,lo) == old(count(2, lift(a),0,lo))
+            // assume count(2, lift(a),hi+1,len(a)) == old(count(2, lift(a),hi+1,len(a)))
+            // assume count(2, lift(a),lo,mid) == old(count(2, lift(a),lo,mid))
+            // assume count(2, lift(a),mid,hi+1) == old(count(2, lift(a),mid,hi+1))
 
-            // assert count(lift(a),0,mid) == count(s,0,mid)
-            // assert count(lift(a),hi+1,len(a)) == count(s,hi+1,len(a))
-            // assert count(lift(a),mid+1,hi) == count(s,mid+1,hi)
+            // assert count(2, lift(a),0,mid) == count(2, s,0,mid)
+            // assert count(2, lift(a),hi+1,len(a)) == count(2, s,hi+1,len(a))
+            // assert count(2, lift(a),mid+1,hi) == count(2, s,mid+1,hi)
             
             // Case c_filt(a,mid)
             // assume c_filt(a,mid)
-            // assert count(lift(a),mid,hi) == count(lift(a),mid+1,hi) +  c_term(a,mid)
-            // assert count(lift(a),mid,hi+1) == count(lift(a),mid,hi) +  __term__(__comp_type_count__(), lift(a), hi)
-            // assert count(lift(a),mid,hi+1) == count(s,mid,hi+1)
+            // assert count(2, lift(a),mid,hi) == count(2, lift(a),mid+1,hi) +  c_term(a,mid)
+            // assert count(2, lift(a),mid,hi+1) == count(2, lift(a),mid,hi) +  __term__(__comp_type_count__(), lift(a), hi)
+            // assert count(2, lift(a),mid,hi+1) == count(2, s,mid,hi+1)
 
             // Case !c_filt(a,mid)
             // assume !c_filt(a,mid)
             // assert old[pre](!c_filt(a,hi))
             // Sub-case !c_filt(a,hi)
             //assume !c_filt(a,hi)
-            //assert count(lift(a),mid,hi) == count(lift(a),mid+1,hi)
+            //assert count(2, lift(a),mid,hi) == count(2, lift(a),mid+1,hi)
             
             // assume c_filt(a,hi)
             // assert old[pre](c_filt(a,mid))
@@ -232,24 +270,27 @@ method sort012(a: Array)
             // assert old[pre](c_filt(a,mid)) == c_filt(a,hi)
             // assert old[pre](c_filt(a,hi)) == c_filt(a,mid)
 
-            // assert count(lift(a),mid,hi) == count(lift(a),mid+1,hi)
-            // assert count(lift(a),mid,hi+1) == count(lift(a),mid,hi) +  c_term(a,hi)
+            // assert count(2, lift(a),mid,hi) == count(2, lift(a),mid+1,hi)
+            // assert count(2, lift(a),mid,hi+1) == count(2, lift(a),mid,hi) +  c_term(a,hi)
 
-            // assert count(lift(a),mid,hi+1) == count(lift(a),mid+1,hi) + c_term(a,hi)
-            // assert count(lift(a),mid,hi+1) == count(s,mid+1,hi) + c_term(a,hi)
-            // assert count(lift(a),mid,hi+1) == count(s,mid+1,hi) + old[pre](c_term(a,hi))
-            // assert !c_filt(a,mid) ==> count(old[pre](lift(a)),mid+1,hi+1) == count(old[pre](lift(a)),mid+1,hi)
-            assume trig(count(old[pre](lift(a)),mid+1,hi))
-            assert trig(count(old[pre](lift(a)),mid+1,hi))
+            // assert count(2, lift(a),mid,hi+1) == count(2, lift(a),mid+1,hi) + c_term(a,hi)
+            // assert count(2, lift(a),mid,hi+1) == count(2, s,mid+1,hi) + c_term(a,hi)
+            // assert count(2, lift(a),mid,hi+1) == count(2, s,mid+1,hi) + old[pre](c_term(a,hi))
+            
+            
+            // !!!!!
+            // assert !c_filt(a,mid) ==> count(2, old[pre](lift(a)),mid+1,hi+1) == count(2, old[pre](lift(a)),mid+1,hi)
+            // assume trig(count(2, old[pre](lift(a)),mid+1,hi))
+            // assert trig(count(2, old[pre](lift(a)),mid+1,hi))
 
-            assume trig(count(old[pre](lift(a)),mid+1,hi+1))
-            assert trig(count(old[pre](lift(a)),mid+1,hi+1))
+            // assume trig(count(2, old[pre](lift(a)),mid+1,hi+1))
+            // assert trig(count(2, old[pre](lift(a)),mid+1,hi+1))
 
-            // assert count(lift(a),mid,hi+1) == count(s,mid,hi+1)
+            // assert count(2, lift(a),mid,hi+1) == count(2, s,mid,hi+1)
 
 
 
-            // assert count(lift(a),0,lo) + count(lift(a),lo,mid) + count(lift(a),mid,hi+1) + count(lift(a),hi+1,len(a))
+            // assert count(2, lift(a),0,lo) + count(2, lift(a),lo,mid) + count(2, lift(a),mid,hi+1) + count(2, lift(a),hi+1,len(a))
             // assert pre_count == count_all(a)
             
             hi := hi - 1

@@ -14,7 +14,7 @@ domain CountVal {
     }
 
     axiom count_filter {
-        forall a: Seq[Int], k: Int :: { __count_filter__(a, k) } __count_filter__(a, k) == (a[k] == 0)
+        forall a: Seq[Int], k: Int :: { __count_filter__(a, k) } __count_filter__(a, k) == (a[k] == 2)
     }
 
     axiom count_induct {
@@ -37,17 +37,9 @@ domain CountVal {
         && ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi && !__count_filter__(a, hi-1) ==> acount(a, lo, hi) == acount(a, lo, hi-1) )
     }
 
-    axiom count_induction_both {
-        true
-        //&& ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi &&  __count_filter__(a, lo) &&  __count_filter__(a, hi-1) ==> acount(a, lo, hi) == acount(a, lo+1, hi-1) + __count_term__(a, lo) + __count_term__(a, hi-1) )
-        //&& ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi && !__count_filter__(a, lo) &&  __count_filter__(a, hi-1) ==> acount(a, lo, hi) == acount(a, lo+1, hi-1) +                      __count_term__(a, hi-1) )
-        //&& ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi &&  __count_filter__(a, lo) && !__count_filter__(a, hi-1) ==> acount(a, lo, hi) == acount(a, lo+1, hi-1) + __count_term__(a, lo) )
-        //&& ( forall a: Seq[Int], lo: Int, hi: Int :: { count(a, lo, hi) } lo < hi && !__count_filter__(a, lo) && !__count_filter__(a, hi-1) ==> acount(a, lo, hi) == acount(a, lo+1, hi-1) )
-    }
-
     axiom count_unit {
         forall a: Seq[Int], lo: Int, hi: Int :: { acount(a, lo, hi) }
-            ( forall k: Int :: lo <= k && k < hi && __count_filter__(a, k) ==> __count_term__(a, k) == 0 )
+            ( forall k: Int :: { __count_term__(a, k) } lo <= k && k < hi && __count_filter__(a, k) ==> __count_term__(a, k) == 0 )
             ==>
             acount(a, lo, hi) == 0
     }
@@ -60,7 +52,7 @@ domain CountVal {
                     __count_induct__(acount(a,lo,mid), acount(a,mid,hi)) == acount(a,lo,hi)
     }
 
-    axiom count_trans {
+    axiom count_trans_1 {
         forall a: Seq[Int], b: Seq[Int], lo_a: Int, hi_a: Int, lo_b: Int, hi_b: Int :: 
             { count(a, lo_a, hi_a), count(b, lo_b, hi_b) }
                 hi_a == |a| && lo_b == 0 ==>
@@ -68,7 +60,23 @@ domain CountVal {
                     == acount(a++b, lo_a, hi_a+hi_b)
     }
 
-    /*
+    axiom count_trans_2 {
+        forall a: Seq[Int], b: Seq[Int], lo_a: Int, hi_c: Int :: 
+            { dum(count(a++b, lo_a, hi_c)) }
+                acount(a, lo_a, |a|) + acount(b, 0, hi_c - |a|) 
+                == acount(a++b, lo_a, hi_c)
+    }
+
+
+    axiom cont_term {
+        forall a: Seq[Int], b: Seq[Int], lo_a: Int, hi_a: Int, lo_b: Int, hi_b: Int :: 
+            { count(a, lo_a, hi_a), count(b, lo_b, hi_b) }
+                hi_a == |a| && lo_b == 0 ==>
+                    count(a, lo_a, hi_a) + count(b, lo_b, hi_b) 
+                    == acount(a++b, lo_a, hi_a+hi_b)
+    }
+
+    
     axiom count_same_term {
         forall a: Seq[Int], b: Seq[Int], lo: Int, hi: Int ::
             { count(a, lo, hi), acount(b, lo, hi) }
@@ -80,7 +88,7 @@ domain CountVal {
                             ( __count_filter__(a, k) ==> __count_term__(a, k) == __count_term__(b, k) )
                 ) ==>
                 acount(a, lo, hi) == acount(b, lo, hi)
-    }*/
+    }
 
     // encode nested count-countrehension
 
@@ -97,3 +105,6 @@ domain CountVal {
     }
 }
 
+domain Bla {
+    function dum(b: Int): Bool
+}

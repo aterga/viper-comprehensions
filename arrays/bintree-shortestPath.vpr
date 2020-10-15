@@ -6,7 +6,7 @@ import "sum.vpr"
 define injective(xs)
   (forall i: Int, j: Int :: { xs[i], xs[j] } 0 <= i && i < j && j < |xs| ==> xs[i] != xs[j])
 
-function sr2si(sr: Seq[Ref]): Seq[Int]
+function lift(sr: Seq[Ref]): Seq[Int]
   requires forall z: Int :: { sr[z].val } 0 <= z && z < |sr| ==> acc(sr[z].val, wildcard)
   ensures |result| == |sr|
   ensures  forall i: Int :: 
@@ -14,9 +14,9 @@ function sr2si(sr: Seq[Ref]): Seq[Int]
     { result[i] }
         0 <= i && i < |sr| ==> result[i] == sr[i].val
   ensures forall xs: Seq[Ref], ys: Seq[Ref] :: 
-    { sr2si(xs ++ ys) }
+    { lift(xs ++ ys) }
       xs != Seq() && ys != Seq() ==> 
-      (xs ++ ys == sr ==> result == sr2si(xs) ++ sr2si(ys))
+      (xs ++ ys == sr ==> result == lift(xs) ++ lift(ys))
 
 
 // define Graph(root)
@@ -39,7 +39,7 @@ function sr2si(sr: Seq[Ref]): Seq[Int]
 //   requires forall i: Int, j: Int :: 
 //     { path[i], path[j] }
 //       0 <= i && i < j && j < |path| ==> path[i] != path[j]
-//   requires sum(sr2si(path), 0, |path|) <= max_sum
+//   requires sum(lift(path), 0, |path|) <= max_sum
 //   ensures Tree(tree)
 // {
 //   if (node.left != null && ) {
@@ -76,14 +76,15 @@ method shortestPath(g: Set[Ref], node: Ref, target: Ref, level: Int)
   requires node in g && target in g
 
   ensures Graph(g, 1/2)
-  ensures forall i: Int :: { path[i] } 0 <= i && i < |path| ==> path[i] in g  // path is a subset of g
+  // ensures forall i: Int :: { path[i] } 0 <= i && i < |path| ==> path[i] in g  // path is a subset of g
   ensures forall x: Ref :: { x in path } x in path ==> x in g
   ensures forall i: Int, j: Int :: { path[i], path[j] } 0 <= i && i < j && j < |path| ==> path[i] != path[j]  // path is acyclic
   ensures forall n: Ref :: { n.val } n in g ==> n.val == old(n.val)  // the structure is read-only! why does this not follow from framing? 
-  ensures !reachable ==> path == Seq() && cost == 0
-  ensures reachable ==> sum(sr2si(path), 0, |sr2si(path)|) == cost
+  ensures reachable ==> |path| >= 1 && node == path[0] && path[|path|-1] == target
+  ensures !reachable ==> path == Seq() /*&& cost == 0*/
+  ensures reachable ==> sum(lift(path), 0, |lift(path)|) == cost
 
-  // ensures forall p: Seq[Ref] :: p in all_paths ==> cost <= sum(sr2si(p), 0, |p|)
+  // ensures forall p: Seq[Ref] :: p in all_paths ==> cost <= sum(lift(p), 0, |p|)
 {
   if (node == target) {
     reachable := true
@@ -119,16 +120,16 @@ method shortestPath(g: Set[Ref], node: Ref, target: Ref, level: Int)
         path := Seq(node) ++ sub_path_a
         cost := node.val + cost_a
 
-        // assert sr2si(Seq(node) ++ sub_path_a) == sr2si(Seq(node)) ++ sr2si(sub_path_a)
+        // assert lift(Seq(node) ++ sub_path_a) == lift(Seq(node)) ++ lift(sub_path_a)
         // assert false
         
       } elseif (!reach_a && reach_b || reach_a && reach_b && (cost_b < cost_a)) {
         assume !(node in sub_path_b)  // assume acyclicity
-        assert sr2si(sub_path_b) == old[l0](sr2si(sub_path_b))
+        assert lift(sub_path_b) == old[l0](lift(sub_path_b))
         path := Seq(node) ++ sub_path_b
         cost := node.val + cost_b
 
-        // assert sr2si(Seq(node) ++ sub_path_b) == sr2si(Seq(node)) ++ sr2si(sub_path_b)
+        // assert lift(Seq(node) ++ sub_path_b) == lift(Seq(node)) ++ lift(sub_path_b)
       }
     }
   }
