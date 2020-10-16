@@ -1,0 +1,162 @@
+
+
+import "map.vpr"
+
+domain Math {
+    function __min__(a: Int, b: Int): Int
+	axiom min_scalar {
+		forall x: Int, y: Int :: 
+            { __min__(x,y) } 
+                (__min__(x,y) == x || __min__(x,y) == y) 
+                && __min__(x,y) <= x 
+                && __min__(x,y) <= y
+	}
+}
+
+domain Min {
+
+    function min(R: Map[Ref, Int], F: Set[Ref]): Int
+    function synonym__min(R: Map[Ref, Int], F: Set[Ref]): Int
+    // function __unit__(): Int
+
+    // function filterCreate(): Set[Ref]
+
+    axiom ax_synonym__min {
+        forall R: Map[Ref, Int], F: Set[Ref] :: 
+            { min(R, F) }
+                synonym__min(R, F) == min(R, F)
+    }
+
+    // axiom lemma_3_1 {
+    //     forall R: Set[Tuple[Ref, Int]], F: Set[Ref] :: 
+    //         { min(R, F) }
+    //             F != Set() ==> 
+    //                 exists a: Int :: 
+    //                     a in F && (F != Set(a) && min(R, F) == __min__(synonym__min(R, F setminus Set(a)), a) 
+    //                              || F == Set(a) && min(R, F) == a)
+    // }
+
+    axiom ax_3_3 {
+        forall R: Map[Ref, Int], F: Set[Ref], a: Ref ::
+            { Map_lookup(R, a), min(R, F) }
+            // { F setminus Set(a), min(R, F) }
+                // F subset Map_keys(R) &&
+                a in F ==> 
+                min(R, F) == __min__(synonym__min(R, F setminus Set(a)), Map_lookup(R, a))
+    }
+
+    axiom ax_same_term {
+        forall RA: Map[Ref, Int], RB: Map[Ref, Int], F: Set[Ref] :: 
+            { min(RA, F), min(RB, F) }
+                // F subset Map_keys(RA) && F subset Map_keys(RB) && 
+                (forall a: Ref :: 
+                    { Map_lookup(RA, a) }
+                    { Map_lookup(RB, a) }
+                        a in F ==> 
+                        Map_lookup(RA, a) == Map_lookup(RB, a))
+                ==> min(RA, F) == min(RB, F)
+    }
+}
+
+
+
+define ACCESS_NODES(g, p)
+    (forall n: Ref :: { n.val } n in g ==> acc(n.val, p))
+
+
+function snap(g: Set [Ref]): Map[Ref, Int]
+    requires ACCESS_NODES(g, wildcard)
+    // ensures forall n: Ref ::
+    //     { n.val }
+    //     n in g ==> NewTuple(n, n.val) in result
+    ensures forall u:Ref, v:Int :: 
+        // { Map_in(result, u, v) }
+        { v in Map_values(result), Map_lookup(result, u) }
+            (u in g && u.val == v) <==> v == Map_lookup(result, u)  // Map_in(result, u, v)
+    ensures forall u:Ref ::
+        { u.val }
+        { Map_lookup(result, u) }
+            u in g ==> Map_lookup(result, u) == u.val
+    // ensures forall a: Ref ::
+    //     { a.val }
+    //         dum1(g setminus Set(a))
+
+    // ensures forall u:Ref ::
+    //     { Map_lookup(result, u) }
+    //         Map_lookup(result, u) == u.val ==> u in g
+    ensures Map_keys(result) == g
+
+// method hello()
+// {
+//     var a: Set[Ref]
+//     inhale ACCESS_NODES(a, write)
+//     var b: Set[Int]
+//     // assume b == snap(a)
+
+//     assert false
+// }
+
+define min_all(g) (let R==(snap(g)) in min(R, g))
+
+method flipOne_1(g: Set [Ref], x: Ref, m: Int) 
+	requires forall n: Ref:: n in g ==> acc(n.val) 
+	requires x in g 
+	requires m == min_all(g) && 0 <= m 
+{
+	x.val := -1 * m 
+    
+
+    // assert min(snap(g), g) == __min__(min(snap(g), g setminus Set(x)), Map_lookup(snap(g), x))
+    // assert min(snap(g), g) <= min(snap(g), g setminus Set(x))
+    
+
+    // assert Map_card(snap(g)) == |g|
+    // assert Map_in(snap(g), x, -1 * m)
+    // assert Map_lookup(snap(g), x) == x.val
+
+    // assert forall RA: Map[Ref, Int], RB: Map[Ref, Int], F: Set[Ref] :: 
+    //         { min(RA, F), min(RB, F) }
+    //             // F subset Map_keys(RA) && F subset Map_keys(RB) && 
+    //             (forall a: Ref :: 
+    //                 { Map_lookup(RA, a) }
+    //                 { Map_lookup(RB, a) }
+    //                     a in F ==> 
+    //                     Map_lookup(RA, a) == Map_lookup(RB, a))
+    //             ==> min(RA, F) == min(RB, F)
+
+    // assert (forall a: Ref :: 
+    //             a in g setminus Set(x) ==> 
+    //             //Map_lookup(snap(g), a) == a.val)
+    //             Map_in(snap(g), a, a.val))
+    // assert (forall a: Ref :: 
+    //             a in g setminus Set(x) ==> 
+    //             Map_lookup(snap(g), a) == Map_lookup(old(snap(g)), a))
+    assert min(snap(g), g setminus Set(x)) == min(old(snap(g)), g setminus Set(x))
+    // assume dum2(old(snap(g)))
+
+    // assert min(snap(g), g) == -m
+	assert min_all(g) == -m 
+    assert false
+}
+
+domain Tuple[T, S] {
+    function left(t: Tuple[T,S]): T
+    function right(t: Tuple[T,S]): S
+}
+field val: Int
+function snap2(g: Set [Ref]): Tuple[Set[Int], Int]
+    requires forall n: Ref :: n in g ==> acc(n.val)
+    ensures forall n: Ref :: n in g ==> n.val in left(result)
+    // ensures forall v: Int :: v in left(result) ==> get(v, right(result)) in g
+
+domain Dummy {
+    function dum(d: Bool): Bool
+    function dum1(s: Set[Ref]): Bool
+    function dum2(d: Map[Ref, Int]): Bool
+
+    // axiom axT {
+    //     forall s: Set[Ref] :: 
+    //         dum1(s) == true
+    // }
+}
+
