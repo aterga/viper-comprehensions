@@ -1,0 +1,187 @@
+// define UNSHARED(t001)
+//     (forall n:Ref :: 
+//         {}
+//             )
+
+// define TREE(tr000) 
+//     GRAPH(tr000) && TREE_IMPL(tr000)
+
+// define TREE_IMPL(t001)
+//     CLOSED(t001) && /*ACYCLIC(t001) &&*/ UNSHARED(t001)
+
+define DAG(dg000)
+    GRAPH(dg000) && DAG_IMPL(dg000)
+
+define DAG_IMPL(dg000)
+    CLOSED(dg000) /*&& ACYCLIC(dg000)*/
+
+define DISJOINT(graph_A, graph_B)
+    (forall r0:Ref :: 
+        { r0 in graph_A, r0 in graph_B } 
+            (r0 in graph_A) ==> !(r0 in graph_B)) 
+
+define CLOSED_for($field$, nodes)  
+    (forall n:Ref :: 
+        { n.$field$ in nodes }
+        { n in nodes, n.$field$ }
+            n in nodes && n.$field$ != null ==> n.$field$ in nodes)
+
+
+define CLOSED_IN_for($field$, nodes, against_nodes)
+    (forall n:Ref :: 
+        { n.$field$ in against_nodes }
+        { n in nodes, n.$field$ }
+            n in nodes 
+            // __learn_trigger__( fdsa ) && 
+            ==> !(n.$field$ in against_nodes setminus nodes))
+
+
+define CLOSED_IN(nodes, against_nodes) 
+    CLOSED_IN_for(left, nodes, against_nodes)
+    && CLOSED_IN_for(right, nodes, against_nodes)
+
+define CLOSED(nodes)
+    CLOSED_for(left, nodes)
+    && CLOSED_for(right, nodes)
+
+
+define NODES_for($field$, nodes, p)
+    (forall n:Ref :: 
+        { n.$field$ } 
+            n in nodes ==> acc(n.$field$, p))
+
+define NODES(nodes, p)
+    NODES_for(left, nodes, p)
+    && NODES_for(right, nodes, p)
+
+define GRAPH(nodes)
+    !(null in nodes)
+    && NODES(nodes, write)
+
+
+
+function snap(g: Set [Ref]): Map[Ref, Int]
+    requires NODES(g, wildcard)
+    ensures forall u:Ref :: 
+        { Map_lookup(result, u) }
+        // { v in Map_values(result), u in Map_keys(result) }
+        // { v in Map_values(result), u.val }
+            (1 == Map_lookup(result, u) && 1 in Map_values(result) && u in Map_keys(result))
+            ==>
+            (u in g)
+    ensures forall u:Ref ::
+        { u.left }
+        { u.right }
+        { Map_lookup(result, u) }
+            u in g ==> Map_lookup(result, u) == 1
+    // ensures forall u: Ref, g1: Set[Ref] :: 
+    //     { u.val, g1 setminus Set(u) }
+    //         dum((g1 setminus Set(u)) subset g)
+    ensures Map_keys(result) == g
+
+
+define FILTER(x) 
+    (x.right==null)
+
+function filter(g: Set[Ref]): Set[Ref]
+    requires NODES(g, wildcard)
+    ensures result subset g
+    ensures forall u:Ref :: 
+        // { u.left }
+        { u.right }
+            u in g ==> (FILTER(u) <==> u in result)
+    ensures forall u:Ref :: 
+        // { u.left }
+        { u.right }
+            u in g ==> (!FILTER(u) <==> u in g setminus result)
+    ensures forall g1: Set[Ref], g2: Set[Ref] :: 
+        { g1 union g2, filter(g1) }
+        { g1 union g2, filter(g2) }
+        // { filter(g1), filter(g2),  }
+            g1 subset g && g2 subset g && DISJOINT(g1, g2) ==> filter(g1) union filter(g2) == result
+
+function subIn(footprint: Set[Ref], t: Set[Ref], sub_root: Ref): Set[Ref]
+    requires GRAPH(footprint)
+    requires sub_root in t    
+    requires t subset footprint
+    ensures result subset t
+    ensures CLOSED_IN(result, t)
+    ensures sub_root in result
+
+
+field left: Ref
+field right: Ref
+
+import "generic.vpr"
+
+method merge(l: Ref, r: Ref,
+             g: Set[Ref], ldag: Set[Ref], rdag: Set[Ref]) // ghost
+    returns (link: Ref) // ghost
+    
+    requires l in ldag
+    requires r in rdag
+
+    requires DISJOINT(ldag, rdag)
+    requires g == ldag union rdag
+    requires DAG(g)
+    
+    requires CLOSED_IN(ldag, g)
+    ensures DAG(g)
+    ensures link in ldag 
+    ensures old(l.right) == null ==> l == link && l.right == r
+    ensures count(snap(g), filter(g)) == old(count(snap(g), filter(g))) -1
+            // count(snap(g), filter(ldag)) + count(snap(g), filter(rdag)) - 1
+
+{
+    if ( l.right != null ) {        
+        // assume false
+        var nldag: Set[Ref] := subIn(g, ldag, l.right)
+
+        // Footprint of the sub-call: 
+        var g1: Set[Ref] := nldag union rdag
+        assume CLOSED(g1)
+
+        // assume l in g && !(l in g1)
+        // assert filter(g1) == filter(g) setminus Set(l)
+        // var g2: Set[Ref] := 
+        // assert l in g2
+        assert g == g1 union (g setminus g1)
+        // assert filter(g) == filter(g1) union filter(g setminus g1)
+
+    label l1
+        link := merge(l.right, r, g1, nldag, rdag)
+    label l2
+
+        // assert count(snap(g1), filter(g1)) == count(snap(g1), old(filter(g1))) -1
+        assert count(snap(g), filter(g1)) == count(snap(g), old(filter(g1))) -1
+        // assert old(filter(g)) == old(filter(g1)) union old(filter(g setminus g1))
+
+        // assert count(snap(g), filter(g)) == count(snap(g), old(filter(g))) -1
+        
+    } else {
+
+        var old_count: Int := count(snap(g), filter(g))
+        // assert filter(ldag) union filter(rdag) == filter(ldag union rdag)
+        // assert old_count == count(snap(g), filter(ldag)) + count(snap(g), filter(rdag))
+
+        // assert l.right == null && l in ldag && r in rdag
+
+        // assert count(snap(g), filter(g)) == count(snap(g), filter(g) setminus Set(l)) + 1 
+
+        l.right := r
+        link := l
+
+        // assert l in old(filter(g))
+        // assert forall n: Ref :: n != l && n in filter(g) ==> n in old(filter(g))
+        // assert filter(g) setminus Set(l) == old(filter(g)) setminus Set(l)
+        assume filter(g) == old(filter(g)) setminus Set(l)  // -- TODO
+        // assert count(snap(g), filter(g) setminus Set(l)) == old(count(snap(g), filter(g) setminus Set(l)))
+
+        // assert !(l in filter(g))
+
+        // assert count(snap(g), filter(g)) == count(snap(g), filter(g) setminus Set(l)) 
+
+        // assert count(snap(g), filter(g)) == old_count  -1
+        // assert count(snap(g), filter(ldag)) + count(snap(g), filter(rdag)) - 1 == 
+    }
+}
