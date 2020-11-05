@@ -1,0 +1,231 @@
+import "generic.vpr"
+
+
+
+field left: Ref
+field right: Ref
+field val: Int
+
+field marked: Bool
+
+define ACCESS_NODES(g, p)
+    (forall n: Ref :: { n.val } n in g ==> acc(n.val, p))
+domain Dummy {
+    function dum(d: Bool): Bool
+}
+function snap1(g: Set [Ref]): Map[Ref, Int]
+    requires ACCESS_NODES(g, wildcard)
+    ensures forall u:Ref, v:Int :: 
+        { v in Map_values(result), Map_lookup(result, u) }
+        // { v in Map_values(result), u in Map_keys(result) }
+        // { v in Map_values(result), u.val }
+            (v == Map_lookup(result, u) && v in Map_values(result) && u in Map_keys(result))
+            ==>
+            (u in g && abs(u.val) == v)
+    ensures forall u:Ref ::
+        { u.val }
+        { Map_lookup(result, u) }
+            u in g ==> Map_lookup(result, u) == abs(u.val)
+    // ensures forall u: Ref, g1: Set[Ref] :: 
+    //     { u.val, g1 setminus Set(u) }
+    //         dum((g1 setminus Set(u)) subset g)
+    ensures Map_keys(result) == g
+
+function snap(g: Set [Ref]): Map[Ref, Int]
+    requires ACCESS_NODES(g, wildcard)
+    ensures forall u:Ref, v:Int :: 
+        { v in Map_values(result), Map_lookup(result, u) }
+        // { v in Map_values(result), u in Map_keys(result) }
+        // { v in Map_values(result), u.val }
+            (v == Map_lookup(result, u) && v in Map_values(result) && u in Map_keys(result))
+            ==>
+            (u in g && u.val == v)
+    ensures forall u:Ref ::
+        { u.val }
+        { Map_lookup(result, u) }
+            u in g ==> Map_lookup(result, u) == u.val
+    // ensures forall u: Ref, g1: Set[Ref] :: 
+    //     { u.val, g1 setminus Set(u) }
+    //         dum((g1 setminus Set(u)) subset g)
+    ensures Map_keys(result) == g
+
+
+define CLOSED_for(g, $field$)
+  (forall n: Ref :: { n.$field$ in g } n in g && n.$field$ != null ==> n.$field$ in g)
+
+define CLOSED(g)
+  CLOSED_for(g, left) && CLOSED_for(g, right)
+
+define Graph(g, p) 
+  ((forall n: Ref :: { n.val } n in g ==> acc(n.val, p)) &&
+  (forall n: Ref :: { n.left } n in g ==> acc(n.left, p)) && 
+  (forall n: Ref :: { n.right } n in g ==> acc(n.right, p)) && 
+  (forall n: Ref :: { n.marked } n in g ==> acc(n.marked, p)) && 
+  !(null in g) && CLOSED(g))
+  
+
+
+function set(xs: Seq[Ref]): Set[Ref]
+    ensures |result| == |xs|
+    ensures forall r: Ref :: { r in result } r in result ==> r in xs
+    ensures forall r: Ref :: { r in xs } r in xs ==> r in result
+    ensures (exists x: Ref :: { Seq(x) } xs == Seq(x)) ==> result == Set(xs[0])
+    // ensures forall ys: Seq[Ref] :: 
+    //   { set(ys) } 
+    //     (forall y: Ref :: { y in ys } y in ys ==> y in xs) ==> 
+    //       set(ys) subset result
+    // ensures forall ys: Seq[Ref] ::
+    //   { set(ys) }
+    //     (forall y: Ref :: { y in ys } y in ys <==> y in xs) ==> result == set(ys)
+    ensures forall ys: Seq[Ref], zs: Seq[Ref] :: 
+      { set(ys), set(zs) } 
+      { ys ++ zs }
+        ys ++ zs == xs && 
+        (forall y: Ref :: { y in ys } y in ys ==> !(y in zs)) ==> 
+          (set(ys) union set(zs) == result) && 
+          (result setminus set(ys) == set(zs))
+    // ensures 
+
+function abs(x: Int): Int
+  ensures result == (x > 0 ? x : -x)
+
+method shortestPath(g: Set[Ref], node: Ref, target: Ref, level: Int)
+  returns (reachable: Bool, path: Seq[Ref], cost: Int/*, all_paths: Set[Seq[Ref]]*/)
+
+  requires Graph(g, 1/2)
+  requires node in g && target in g
+
+  ensures Graph(g, 1/2)
+  // ensures forall i: Int :: { path[i] } 0 <= i && i < |path| ==> path[i] in g  // path is a subset of g
+  ensures forall x: Ref :: { x in path } x in path ==> x in g
+  ensures forall i: Int, j: Int :: { path[i], path[j] } 0 <= i && i < j && j < |path| ==> path[i] != path[j]  // path is acyclic
+  ensures forall n: Ref :: { n.val } n in g ==> n.val == old(n.val)  // the structure is read-only! why does this not follow from framing? 
+  ensures !reachable ==> path == Seq() /*&& cost == 0*/
+  
+  ensures reachable ==> |path| >= 1 && node == path[0] && path[|path|-1] == target
+  
+  ensures reachable ==> sum(snap(g), set(path)) == cost
+
+  ensures reachable ==> 0 < |path| && node == path[0] && path[|path|-1] == target
+  
+  // ensures reachable ==> abs(cost) <= $\SETCOMP{sum} <n: [ \mo{abs}(n\mo{.val}) || n \in \mo{g} ]$
+  ensures    reachable ==> abs(cost) <= sum(snap1(g), g)
+
+
+  
+
+  // ensures forall p: Seq[Ref] :: p in all_paths ==> cost <= sum(lift(p), 0, |p|)
+{
+  if (node == target) {
+    reachable := true
+    path := Seq(node)
+    cost := node.val
+
+    // assert Map_lookup(snap(g), node) == node.val
+    // assert 
+    // assert sum(snap(g), set(path)) == cost
+
+    // assert sum(snap1(g), g) == sum(snap1(g), g setminus Set(node)) + abs(node.val)
+    assert abs(cost) <= sum(snap1(g), g setminus Set(node)) + abs(node.val)
+    assert abs(cost) <= sum(snap1(g), g)
+
+    // assume false
+  } else {
+
+    var g1: Set[Ref] := g setminus Set(node) //-- TODO
+    assert target in g1
+    assume CLOSED(g1)
+    
+    var sub_path_a: Seq[Ref]
+    var sub_path_b: Seq[Ref]
+    var reach_a: Bool := false
+    var reach_b: Bool := false
+    var cost_a: Int
+    var cost_b: Int
+
+    label l0
+    if (node.left != null && node.left != node) {
+      reach_a, sub_path_a, cost_a := shortestPath(g1, node.left, target, level+1)
+    } 
+    label l1
+    if (node.right != null && node.right != node) {
+      reach_b, sub_path_b, cost_b := shortestPath(g1, node.right, target, level+1)
+    }
+
+    // return aggregated results
+    if (!reach_a && !reach_b) {
+      reachable := false
+      path := Seq()
+      cost := 0
+    } else {
+      
+      reachable := true
+      if (reach_a && !reach_b || reach_a && reach_b && (cost_a <= cost_b)) {
+        assume !(node in sub_path_a)  // assume acyclicity
+        path := Seq(node) ++ sub_path_a
+        cost := node.val + cost_a
+
+        // assert lift(Seq(node) ++ sub_path_a) == lift(Seq(node)) ++ lift(sub_path_a)
+        assert sum(snap(g), set(path) setminus Set(node)) == cost_a
+        // assume false
+        assert sum(snap1(g), g setminus Set(node)) + abs(node.val) == sum(snap1(g), g)
+        
+        
+        
+      } elseif (!reach_a && reach_b || reach_a && reach_b && (cost_b < cost_a)) {
+        assume !(node in sub_path_b)  // assume acyclicity
+        // assert lift(sub_path_b) == old[l0](lift(sub_path_b))
+        
+        
+        
+        // assert snap(set(sub_path_b)) == old[l0](set(sub_path_b))
+        path := Seq(node) ++ sub_path_b
+        cost := node.val + cost_b
+
+
+        // assert sum(snap(g), set(sub_path_b)) == cost_b
+        // assume set(path) setminus set(sub_path_b) == Set(node)
+        // assume set(sub_path_b) subset set(path)
+        // assume set(Seq(node)) union set(sub_path_b) == set(Seq(node) ++ sub_path_b)
+        // assume set(Seq(node)) == Set(node)
+
+        // assert set(sub_path_b) == set(path) setminus set(Seq(node))
+        
+        // assert sum(snap(g), Set(node)) + sum(snap(g), set(sub_path_b)) == cost 
+        // assert sum(snap(g), set(Seq(node))) + sum(snap(g), set(sub_path_b)) == cost 
+        // assert sum(snap(g), set(Seq(node)) union set(sub_path_b)) == cost 
+
+        // assert node in set(path)        
+        // assert Map_lookup(snap(g), node) == node.val
+        // assert comp(1, snap(g), set(path)) == comp(1, snap(g), set(path) setminus Set(node)) + node.val
+        
+        // assert sum(snap(g), set(sub_path_b)) == cost_b
+        assert sum(snap(g), set(path) setminus Set(node)) == cost_b
+        // assert sum(snap(g), set(path)) == sum(snap(g), set(path) setminus Set(node)) + node.val
+        // assert sum(snap(g), set(path)) == cost 
+
+
+        // assert lift(Seq(node) ++ sub_path_b) == lift(Seq(node)) ++ lift(sub_path_b)
+
+
+        // assert abs(cost_b) <= sum(snap1(g), g)
+        // // assert abs(cost) <= sum(snap1(g), g setminus Set(node)) + abs(node.val)
+
+        assert sum(snap1(g), g setminus Set(node)) + abs(node.val) == sum(snap1(g), g)
+        // assert abs(cost) <= sum(snap1(g), g)
+
+      }
+    }
+  }
+}
+
+domain Bla {
+  function dummy(x: Int): Bool
+  function dummys(x: Seq[Int]): Bool
+  axiom ax_dummy {
+    forall x: Int :: { dummy(x) } dummy(x)
+  }
+  axiom ax_dummys {
+    forall x: Seq[Int] :: { dummys(x) } dummys(x)
+  }
+}

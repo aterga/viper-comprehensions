@@ -56,20 +56,20 @@ domain SetComp[T, S] {
     //                     Map_lookup(R, a))
     // }
 
-    // axiom ax_3_3_0 {
-    //     forall R: Map[T, S], F: Set[T], a: T ::
-    //         { Map_lookup(R, a), comp(0, R, F) }
-    //         { F setminus Set(a), comp(0, R, F) }
-    //         { F setminus Set(a), F subset Map_keys(R) }
-    //         { Map_lookup(R, a), F subset Map_keys(R) }
-    //         { a in F, F subset Map_keys(R) }
-    //         { a in F, Map_lookup(R, a) }
-    //             a in F ==> 
-    //             comp(0, R, F) == 
-    //                 __step__(0,
-    //                     __syn_comp__(0, R, F setminus Set(a)), 
-    //                     Map_lookup(R, a))
-    // }
+    axiom ax_3_3_0 {
+        forall R: Map[T, S], F: Set[T], a: T ::
+            { Map_lookup(R, a), comp(0, R, F) }
+            { F setminus Set(a), comp(0, R, F) }
+            // { F setminus Set(a), F subset Map_keys(R) }
+            // { Map_lookup(R, a), F subset Map_keys(R) }
+            // { a in F, F subset Map_keys(R) }
+            // { a in F, Map_lookup(R, a) }
+                a in F ==> 
+                comp(0, R, F) == 
+                    __step__(0,
+                        __syn_comp__(0, R, F setminus Set(a)), 
+                        Map_lookup(R, a))
+    }
 
     axiom ax_3_3_1 {
         forall R: Map[T, S], F: Set[T], a: T ::
@@ -86,14 +86,54 @@ domain SetComp[T, S] {
                         Map_lookup(R, a))
     }
 
-    axiom ax_singleton {
-        forall t: Int, R: Map[T, S], F: Set[T], a: T ::
-            { comp(t, R, F), Map_lookup(R, a) }
-                F == Set(a) ==> comp(t, R, F) == Map_lookup(R, a)
+    axiom ax_3_3_2 {
+        forall R: Map[T, S], F: Set[T], a: T ::
+            { Map_lookup(R, a), comp(2, R, F) }
+            { F setminus Set(a), comp(2, R, F) }
+            // { F setminus Set(a), F subset Map_keys(R) }
+            // { Map_lookup(R, a), F subset Map_keys(R) }
+            // { a in F, F subset Map_keys(R) }  -- probably causing MLs
+            // { a in F, Map_lookup(R, a) } -- probably causing MLs
+                (a in F ==> 
+                comp(2, R, F) == 
+                    __step__(2,
+                        __syn_comp__(2, R, F setminus Set(a)), 
+                        Map_lookup(R, a)))
+                && (!(a in F) ==> comp(2, R, F) == __syn_comp__(2, R, F setminus Set(a)))
+    }
+
+    // axiom ax_singleton {
+    //     forall t: Int, R: Map[T, S], F: Set[T], a: T ::
+    //         { comp(t, R, F), Map_lookup(R, a) }
+    //             F == Set(a) ==> comp(t, R, F) == Map_lookup(R, a)
+    // }
+
+    axiom ax_singleton_small {
+        forall t: Int, R: Map[T, S], a: T ::
+            { comp(t, R, Set(a)) }
+                comp(t, R, Set(a)) == Map_lookup(R, a)
+    }
+
+    axiom ax_TakeOne_small {
+        forall t: Int, R: Map[T, S], a: T, F: Set[T] ::
+            { comp(t, R, Set(a) union F) } 
+            // { comp(t, R, F union Set(a)) } 
+            // { comp(t, R, F), Map_lookup(R, a) }
+                !(a in F) ==> comp(t, R, Set(a) union F) == 
+                    __step__(t, __syn_comp__(t, R, F), Map_lookup(R, a))
+    }
+
+    axiom ax_TakeMultiple_small {
+        forall t: Int, R: Map[T, S], F1: Set[T], F2: Set[T] :: 
+            { comp(t, R, F1 union F2) }
+                F1 intersection F2 == Set() ==>
+                    comp(t, R, F1 union F2) ==__step__(t, 
+                        __syn_comp__(t, R, F1), __syn_comp__(t, R, F2))
     }
 }
 
 
+define __kind_count__ 2
 define __kind_sum__ 1
 define __kind_min__ 0
 
@@ -117,6 +157,7 @@ domain SetMin[T, S] {
     }
 }
 
+
 domain SetSum[T, S] {
 
     function sum(R: Map[T, S], F: Set[T]): S
@@ -132,4 +173,28 @@ domain SetSum[T, S] {
             { __step__(__kind_sum__, x, y) }
                 __step__(__kind_sum__, x, y) == x + y
     }
+
+    // Sum-specific axioms
+
+    axiom ax_positive {
+        forall R: Map[T, Int], F: Set[T] ::
+            (forall x: T :: { x in F } x in F ==> Map_lookup(R, x) >= 0) ==> sum(R, F) >= 0
+    }
+}
+
+domain CountSet[T, S] {
+    function count(R: Map[T, S], F: Set[T]): S
+    
+    axiom ax_count {
+        forall R: Map[T, S], F: Set[T] ::
+            { count(R, F) }
+                count(R, F) == comp(__kind_count__, R, F)
+    }
+
+    axiom ax_count_step {
+        forall x: Int, y: Int :: 
+            { __step__(__kind_count__, x, y) }
+                __step__(__kind_count__, x, y) == x + y
+    }
+
 }
