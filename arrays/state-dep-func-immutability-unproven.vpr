@@ -1,0 +1,191 @@
+import "sum.vpr"
+
+
+
+// define isReadOnlySeq(sr, p)
+//   forall 
+ 
+define injective(xs)
+  (forall i: Int, j: Int :: { xs[i], xs[j] } 0 <= i && i < j && j < |xs| ==> xs[i] != xs[j])
+
+function sr2si(sr: Seq[Ref]): Seq[Int]
+//   requires none < p && p < write
+  requires forall z: Int :: { sr[z].val } 0 <= z && z < |sr| ==> acc(sr[z].val, wildcard)
+  ensures |result| == |sr|
+  ensures  forall i: Int :: 
+    { sr[i].val }
+    { result[i] }
+        0 <= i && i < |sr| ==> result[i] == sr[i].val
+
+
+method test(path: Seq[Ref])
+  // path is acyclic and consists of unique elements 
+  requires forall i: Int, j: Int :: 
+    { path[i], path[j] }
+      0 <= i && i < j && j < |path| ==> path[i] != path[j]
+  requires forall i: Int :: 
+    { path[i].val } 
+      0 <= i && i < |path| ==> acc(path[i].val, 1/2)
+  ensures forall i: Int :: 
+    { path[i].val } 
+      0 <= i && i < |path| ==> acc(path[i].val, 1/2)
+
+  ensures old(sr2si(path)) == sr2si(path)
+{
+  if (|path| > 0) {
+    var l: Int := 1
+    test(path[l..])
+  }
+  if (|path| > 0) {
+    var r: Int := |path|-1
+    test(path[..r])
+  }
+}
+
+
+// define Graph(root)
+//   !(null in root) && 
+//   (forall n: Ref :: 
+//     { n.left }
+//     { n.right }
+//     { n.val }
+//       n in tree ==> acc(n.left) && acc(n.right) && acc(n.val)) &&
+//   (forall n: Ref :: { n.left in tree } n in tree && n.left != null ==> n.left in tree) && 
+//   (forall n: Ref :: { n.right in tree } n in tree && n.right != null ==> n.right in tree)
+
+
+// method traverse(tree: Set[Ref], root: Ref, path: Seq[Ref], node: Ref, cur_sum: Int, max_sum: Int)
+//   requires Tree(tree)
+//   requires node in tree && root in tree
+//   requires forall n: Ref :: 
+//     { n in path }
+//       n in path ==> n in tree  // path is subset of tree
+//   requires forall i: Int, j: Int :: 
+//     { path[i], path[j] }
+//       0 <= i && i < j && j < |path| ==> path[i] != path[j]
+//   requires sum(sr2si(path), 0, |path|) <= max_sum
+//   ensures Tree(tree)
+// {
+//   if (node.left != null && ) {
+//     assume !(node.left in path)
+//     traverse(tree, root, path ++ Seq(node.left), node.left, max_sum)
+//   }
+//   if (node.right != null) {
+//     assume false
+//     traverse(tree, root, path ++ Seq(node.right), node.right, max_sum)
+//   }
+// }
+
+// method traverse(tree: Set[Ref], path: Seq[Ref], node: Ref, max_sum: Int)
+//   requires Graph(tree)
+//   requires node in tree
+//   requires forall n: Ref :: 
+//     { n in path }
+//       n in path ==> n in tree  // path is subset of tree
+//   requires forall i: Int, j: Int :: 
+//     { path[i], path[j] }
+//       0 <= i && i < j && j < |path| ==> path[i] != path[j]  // path contains unique refs
+  
+//   ensures Graph(tree)
+// {
+//   if (node.val == 0) {
+//     // Unvisited node
+    
+//   }
+
+//   node.val := node.val + 1
+// }
+
+field left: Ref
+field right: Ref
+field val: Int
+
+field marked: Bool
+
+
+define Graph(g, p) 
+  ((forall n: Ref :: { n.val } n in g ==> acc(n.val, p)) &&
+  (forall n: Ref :: { n.left } n in g ==> acc(n.left, p)) && 
+  (forall n: Ref :: { n.right } n in g ==> acc(n.right, p)) && 
+  (forall n: Ref :: { n.marked } n in g ==> acc(n.marked, p)) && 
+  !(null in g) && 
+  (forall n: Ref :: { n.left in g } n in g && n.left != null ==> n.left in g) && 
+  (forall n: Ref :: { n.right in g } n in g && n.right != null ==> n.right in g))
+
+
+method shortestPath(g: Set[Ref], node: Ref, target: Ref, level: Int)
+  returns (reachable: Bool, path: Seq[Ref], cost: Int)
+
+  requires Graph(g, 1/2)
+  requires node in g && target in g
+  // requires 
+
+  ensures Graph(g, 1/2)
+  ensures forall i: Int :: { path[i] } 0 <= i && i < |path| ==> path[i] in g  // path is a subset of g
+  ensures forall x: Ref :: { x in path } x in path ==> x in g
+  ensures forall i: Int, j: Int :: { path[i], path[j] } 0 <= i && i < j && j < |path| ==> path[i] != path[j]  // path is acyclic
+  // ensures 
+  ensures forall n: Ref :: { n.val } n in g ==> n.val == old(n.val)  // the structure is read-only! why does this not follow from framing? 
+  ensures !reachable ==> path == Seq() && cost == 0
+  ensures reachable ==> sum(sr2si(path), 0, |sr2si(path)|) == cost
+
+  // ensures false
+{
+  if (node == target) {
+    reachable := true
+    path := Seq(node)
+    cost := node.val
+  } else {
+    var sub_path_a: Seq[Ref]
+    var sub_path_b: Seq[Ref]
+    var reach_a: Bool := false
+    var reach_b: Bool := false
+    var cost_a: Int
+    var cost_b: Int
+
+    label l0
+    if (node.left != null) {
+      reach_a, sub_path_a, cost_a := shortestPath(g, node.left, target, level+1)
+    } 
+    label l1
+    if (node.right != null) {
+      reach_b, sub_path_b, cost_b := shortestPath(g, node.right, target, level+1)
+    }
+
+    // return aggregated results
+    if (!reach_a && !reach_b) {
+      reachable := false
+      path := Seq()
+      cost := 0
+    } else {
+      
+      reachable := true
+      if (reach_a && !reach_b || reach_a && reach_b && (cost_a >= cost_b)) {
+        assume !(node in sub_path_a)  // assume acyclicity
+        path := Seq(node) ++ sub_path_a
+        cost := node.val + cost_a
+
+        assert sr2si(Seq(node) ++ sub_path_a) == sr2si(Seq(node)) ++ sr2si(sub_path_a)
+        
+      } elseif (!reach_a && reach_b || reach_a && reach_b && (cost_b > cost_a)) {
+        assume !(node in sub_path_b)  // assume acyclicity
+        assert sr2si(sub_path_b) == old[l0](sr2si(sub_path_b))
+        path := Seq(node) ++ sub_path_b
+        cost := node.val + cost_b
+
+        assert sr2si(Seq(node) ++ sub_path_b) == sr2si(Seq(node)) ++ sr2si(sub_path_b)
+      }
+    }
+  }
+}
+
+domain Bla {
+  function dummy(x: Int): Bool
+  function dummys(x: Seq[Int]): Bool
+  axiom ax_dummy {
+    forall x: Int :: { dummy(x) } dummy(x)
+  }
+  axiom ax_dummys {
+    forall x: Seq[Int] :: { dummys(x) } dummys(x)
+  }
+}
