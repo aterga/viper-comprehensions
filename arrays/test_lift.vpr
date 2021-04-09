@@ -1,0 +1,61 @@
+define ACCESS(xs, p)
+  (forall i: Int :: 0 <= i && i < |xs| ==> acc(xs[i].val, p))
+
+domain Sum {
+  function sum(xs: Seq[Int]): Int
+  axiom sum_is_distributive {
+    forall xs: Seq[Int], ys: Seq[Int] :: 
+        { sum(xs++ys) }
+            sum(xs++ys) == sum(xs) + sum(ys)
+} }
+
+function lift(rs: Seq[Ref]): Seq[Int]
+  requires forall i: Int :: 
+    0 <= i && i < |rs| ==> acc(rs[i].val, wildcard)
+  ensures |result| == |rs|
+  ensures forall i: Int :: 
+    0 <= i && i < |rs| ==> result[i] == rs[i].val
+  ensures forall xs: Seq[Ref], ys: Seq[Ref] :: 
+    xs ++ ys == rs ==> result == lift(xs) ++ lift(ys)
+
+
+field val: Int
+method testLift(a: Seq[Ref], b: Seq[Ref])
+  requires ACCESS(a, write) && ACCESS(b, write)
+  requires sum(lift(a)) == 100 && sum(lift(b)) == 200
+{
+  assert sum(lift(a++b)) == 300
+//   assert false
+}
+
+
+// domain Array {
+//     function loc(a: Array, i: Int): Ref
+//     function len(a: Array): Int
+//     function first(r: Ref): Array
+//     function second(r: Ref): Int
+//     function concat(a: Array, b: Array): Array
+
+//     axiom array_length {
+//       forall a: Array :: { len(a) } len(a) >= 0
+//     }
+
+//     axiom array_injectivity {
+//       forall a: Array, i: Int :: 
+//         { loc(a, i) }
+//             a == first(loc(a, i)) && 
+//             i == second(loc(a, i))
+//     }
+// }
+
+// define ACCESS(a, p)
+//   (forall i: Int :: 0 <= i && i < len(a) ==> acc(loc(a, i).val, p))
+
+// function lift(a: Array): Seq[Int]
+//   requires forall i: Int :: 
+//     0 <= i && i < len(a) ==> acc(loc(a, i).val, wildcard)
+//   ensures |result| == len(a)
+//   ensures forall i: Int :: 
+//     0 <= i && i < len(a) ==> result[i] == rs[i].val
+
+
