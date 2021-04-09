@@ -1,0 +1,53 @@
+/*
+ * Verificaiton of the AA-tree data structure
+ * See http://user.it.uu.se/~arnea/ps/simp.ps
+ * 
+ * Verified by Arshavir Ter-Gabrielyan 
+ * started on 26.09.2020
+ * finished in ?
+ */
+
+
+
+import "sum.vpr"
+
+field left: Ref
+field right: Ref
+field level: Int
+field key: Int
+
+
+
+
+define isReadOnlySeq(sr, p)
+  forall z: Int :: { sr[z].val } 0 <= z && z < |sr| ==> acc(sr[z].val, p)
+ 
+
+
+
+define Graph(root)
+  !(null in root) && 
+  (forall n: Ref :: 
+    { n.left }
+    { n.right }
+    { n.val }
+      n in tree ==> acc(n.left) && acc(n.right) && acc(n.val)) &&
+  (forall n: Ref :: { n.left in tree } n in tree && n.left != null ==> n.left in tree) && 
+  (forall n: Ref :: { n.right in tree } n in tree && n.right != null ==> n.right in tree)
+
+
+method skew(g: Set[Ref], t: Ref)
+
+{
+    if (t.left.level == t.level) {
+        // rotate right
+        var temp: Ref := t.left
+        t := t.left
+        temp.left := t.right
+        t.right := temp
+    }
+}
+
+method split(g: Set[Ref], t: Ref) {
+    
+}
