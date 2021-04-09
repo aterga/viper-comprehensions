@@ -97,6 +97,7 @@ method shortestPath(g: Set[Ref], node: Ref, target: Ref, level: Int)
     var reach_b: Bool := false
     var cost_a: Int
     var cost_b: Int
+    // var g1: Set[Ref] := g setminus Set(node) -- TODO
 
     label l0
     if (node.left != null) {

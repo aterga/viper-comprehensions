@@ -62,13 +62,13 @@ define GRAPH(nodes)
 
 function snap(g: Set [Ref]): Map[Ref, Int]
     requires NODES(g, wildcard)
-    ensures forall u:Ref :: 
-        { Map_lookup(result, u) }
+    ensures forall u:Ref, v:Int :: 
+        { v in Map_values(result), Map_lookup(result, u) }
         // { v in Map_values(result), u in Map_keys(result) }
         // { v in Map_values(result), u.val }
-            (1 == Map_lookup(result, u) && 1 in Map_values(result) && u in Map_keys(result))
+            (v == Map_lookup(result, u) && v in Map_values(result) && u in Map_keys(result))
             ==>
-            (u in g)
+            (u in g && v == 1)
     ensures forall u:Ref ::
         { u.left }
         { u.right }
@@ -155,6 +155,15 @@ method merge(l: Ref, r: Ref,
         // assert count(snap(g1), filter(g1)) == count(snap(g1), old(filter(g1))) -1
         assert count(snap(g), filter(g1)) == count(snap(g), old(filter(g1))) -1
         // assert old(filter(g)) == old(filter(g1)) union old(filter(g setminus g1))
+
+        assert count(snap(g1), filter(g1)) == count(snap(g1), old(filter(g1))) -1
+        assert count(snap(g), filter(g1)) == count(snap(g1), filter(g1))
+        assert count(snap(g), filter(g setminus g1)) == old(count(snap(g), filter(g setminus g1)))
+        
+        assert count(snap(g), filter(g)) == count(snap(g), filter(g1)) + count(snap(g), filter(g setminus g1))
+        assert count(snap(g), filter(g)) == count(snap(g1), old(filter(g1))) -1 + old(count(snap(g), filter(g setminus g1)))
+        assert count(snap(g), filter(g)) == count(snap(g1), old(filter(g1))) + count(snap(g), old(filter(g setminus g1))) - 1
+        assert count(snap(g), filter(g)) == count(snap(g), old(filter(g))) -1
 
         // assert count(snap(g), filter(g)) == count(snap(g), old(filter(g))) -1
         

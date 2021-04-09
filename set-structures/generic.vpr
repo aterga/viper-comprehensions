@@ -99,8 +99,17 @@ domain SetComp[T, S] {
                     __step__(2,
                         __syn_comp__(2, R, F setminus Set(a)), 
                         Map_lookup(R, a)))
-                && (!(a in F) ==> comp(2, R, F) == __syn_comp__(2, R, F setminus Set(a)))
-    }
+                && 
+                (!(a in F) ==> comp(2, R, F) == __syn_comp__(2, R, F setminus Set(a)))
+    }//
+
+    /* Possible matchign loop: 
+
+        {comp(2, R, F), R[a]} 
+            --> comp(2, R, F setminus Set(a)) 
+            --> comp(2, R, F setminus Set(a) setminus Set(a), R[a])
+
+    */
 
     // axiom ax_singleton {
     //     forall t: Int, R: Map[T, S], F: Set[T], a: T ::
@@ -117,11 +126,19 @@ domain SetComp[T, S] {
     axiom ax_TakeOne_small {
         forall t: Int, R: Map[T, S], a: T, F: Set[T] ::
             { comp(t, R, Set(a) union F) } 
+            // { Map_lookup(R, a), comp(t, R, F) }
+            // { F setminus Set(a), comp(t, R, F) }
             // { comp(t, R, F union Set(a)) } 
             // { comp(t, R, F), Map_lookup(R, a) }
                 !(a in F) ==> comp(t, R, Set(a) union F) == 
                     __step__(t, __syn_comp__(t, R, F), Map_lookup(R, a))
     }
+
+    // axiom ax_DontTakeOne_small {
+    //     forall t: Int, R: Map[T, S], a: T, F: Set[T] ::
+    //         {  }
+
+    // }
 
     axiom ax_TakeMultiple_small {
         forall t: Int, R: Map[T, S], F1: Set[T], F2: Set[T] :: 
