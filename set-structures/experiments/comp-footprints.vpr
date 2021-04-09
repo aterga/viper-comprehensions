@@ -1,0 +1,29 @@
+
+
+function snap$Ref$Int(g: Set[Ref]): Map[Ref, Int]
+    requires NODES(g, wildcard)
+    ensures Map_keys(result) == g
+    ensures forall u:Ref ::
+        { TERM_TRIGGER(u) }
+        { Map_lookup(result, u) }
+            u in g ==> Map_lookup(result, u) == TERM(u)
+    ensures forall u:Ref :: 
+        { Map_lookup(result, u) }
+            (TERM(u) == Map_lookup(result, u)
+            && TERM(u) in Map_values(result)
+            && u in Map_keys(result))
+            ==>
+            (u in g)
+
+field val: Int
+field id: Int
+field next: Ref
+
+method test( g: Set[Ref] )
+    // requires comp[+,0] i:Int { loc(a,i).val | 0..len(a) }
+    // requires comp[+,0] n:Ref { n.val + (n.next != null ? n.next.id : 0) | g }
+    
+{
+
+
+}

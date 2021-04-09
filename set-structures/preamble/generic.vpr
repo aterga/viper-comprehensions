@@ -1,0 +1,141 @@
+import "../map.vpr"
+
+domain SetComp[T, S] {
+    function comp(_t: Int, R: Map[T, S], F: Set[T]): S
+    function __syn_comp__(_t: Int, R: Map[T, S], F: Set[T]): S
+    function __step__(_t: Int, left_arg: S, right_arg: S): S
+
+    function dum1(bla: Bool): Bool
+    function dum2(bla: T): Bool
+
+    axiom ax_synonym {
+        forall _t: Int, R: Map[T, Int], F: Set[T] :: 
+            { comp(_t, R, F) }
+                __syn_comp__(_t, R, F) == comp(_t, R, F)
+    }
+
+    axiom ax_same_term {
+        forall _t: Int, RA: Map[T, S], RB: Map[T, S], F: Set[T] :: 
+            { comp(_t, RA, F), comp(_t, RB, F) }
+            { F subset Map_keys(RA), comp(_t, RB, F) }
+                (forall a: T :: 
+                    { Map_lookup(RA, a) }
+                    { Map_lookup(RB, a) }
+                        a in F ==> Map_lookup(RA, a) == Map_lookup(RB, a))
+                ==> __syn_comp__(_t, RA, F) == comp(_t, RB, F)
+    }
+
+    axiom ax_singleton_small {
+        forall t: Int, R: Map[T, S], a: T ::
+            { comp(t, R, Set(a)) }
+                comp(t, R, Set(a)) == Map_lookup(R, a)
+    }
+
+    axiom ax_TakeOne_small {
+        forall t: Int, R: Map[T, S], a: T, F: Set[T] ::
+            { comp(t, R, Set(a) union F) }
+            { comp(t, R, F union Set(a)) } 
+            // { Map_lookup(R, a), comp(t, R, F) }
+            // { F setminus Set(a), comp(t, R, F) }
+            // { comp(t, R, F union Set(a)) } 
+            // { comp(t, R, F), Map_lookup(R, a) }
+                !(a in F) ==> comp(t, R, Set(a) union F) == 
+                    __step__(t, __syn_comp__(t, R, F), Map_lookup(R, a))
+    }
+
+    axiom ax_TakeMultiple_small {
+        forall t: Int, R: Map[T, S], F1: Set[T], F2: Set[T] :: 
+            { comp(t, R, F1 union F2) }
+                F1 intersection F2 == Set() ==>
+                    comp(t, R, F1 union F2) ==__step__(t, 
+                        __syn_comp__(t, R, F1), __syn_comp__(t, R, F2))
+    }
+
+    // axiom ax_TakeMultiple {
+    //     forall t: Int, R: Map[T, S], F: Set[T], F1: Set[T], F2: Set[T] :: 
+    //         { comp(t, R, F), F1 union F2 }
+    //             F == F1 union F2 && F1 intersection F2 == Set() ==>
+    //                 comp(t, R, F) == __step__(t, 
+    //                     __syn_comp__(t, R, F1), __syn_comp__(t, R, F2))
+    // }
+}
+
+
+define __kind_count__ 2
+define __kind_sum__ 1
+define __kind_min__ 0
+
+
+domain SetMin[T, S] {
+
+    function min(R: Map[T, S], F: Set[T]): S
+
+    axiom ax_min {
+        forall R: Map[T, S], F: Set[T] ::
+            { min(R, F) }
+                min(R, F) == comp(__kind_min__, R, F)
+    }
+
+    axiom ax_min_step {
+        forall x: Int, y: Int :: 
+            { __step__(__kind_min__, x, y) }
+                (__step__(__kind_min__, x, y) == x || __step__(__kind_min__, x, y) == y)
+                && __step__(__kind_min__, x, y) <= x
+                && __step__(__kind_min__, x, y) <= y
+    }
+}
+
+
+domain SetSum[T, S] {
+
+    function sum(R: Map[T, S], F: Set[T]): S
+
+    axiom ax_sum {
+        forall R: Map[T, S], F: Set[T] ::
+            { sum(R, F) }
+                sum(R, F) == comp(__kind_sum__, R, F)
+    }
+
+    axiom ax_sum_step {
+        forall x: Int, y: Int :: 
+            { __step__(__kind_sum__, x, y) }
+                __step__(__kind_sum__, x, y) == x + y
+    }
+
+    // Sum-specific axioms
+
+    axiom ax_positive {
+        forall R: Map[T, Int], F: Set[T] ::
+            (forall x: T :: { x in F } x in F ==> Map_lookup(R, x) >= 0) ==> sum(R, F) >= 0
+    }
+}
+
+domain CountSet[T, S] {
+    function count(R: Map[T, S], F: Set[T]): S
+    
+    axiom ax_count {
+        forall R: Map[T, S], F: Set[T] ::
+            { count(R, F) }
+                count(R, F) == comp(__kind_count__, R, F)
+    }
+
+    axiom ax_count_step {
+        forall x: Int, y: Int :: 
+            { __step__(__kind_count__, x, y) }
+                __step__(__kind_count__, x, y) == x + y
+    }
+
+}
+
+// define UPDATE(GRAPH, NODE, fieldname, value) {
+    
+//     if (false) {
+//         label l0
+//         NODE.fieldname := value
+//         label l1
+
+//         assert (GRAPH setminus Set(NODE)) union Set(NODE) == GRAPH
+//         assert old[l0](min(snap(GRAPH), GRAPH setminus Set(NODE))) 
+//             == min(snap(GRAPH), GRAPH setminus Set(NODE))
+//     }
+// }

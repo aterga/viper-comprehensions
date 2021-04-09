@@ -1,0 +1,15 @@
+define NODES(g, p)
+    (forall n: Ref :: { n.val } n in g ==> acc(n.val, p))
+
+function snap$Ref$Int(g: Set[Ref]): Map[Ref, Int]
+    requires NODES(g, wildcard)
+    ensures Map_keys(result) == g
+    ensures forall u:Ref, v:Int :: 
+        { v in Map_values(result), Map_lookup(result, u) }
+            (v == Map_lookup(result, u) && v in Map_values(result) && u in Map_keys(result))
+            ==>
+            (u in g && TERM(u) == v)
+    ensures forall u:Ref ::
+        { TERM_TRIGGER(u) }
+        { Map_lookup(result, u) }
+            u in g ==> Map_lookup(result, u) == TERM(u)
