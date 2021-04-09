@@ -1,0 +1,48 @@
+define NODES(g, p)
+    (forall n: Ref :: { n.val } n in g ==> acc(n.val, p))
+
+// function snap(g: Set[Ref]): Map[Ref, Int]
+//     requires NODES(g, wildcard)
+//     ensures forall u:Ref, v:Int :: 
+//         { v in Map_values(result), Map_lookup(result, u) }
+//         { v in Map_values(result), u in Map_keys(result) }
+//         { v in Map_values(result), u.val }
+//             (v == Map_lookup(result, u) && v in Map_values(result) && u in Map_keys(result))
+//             ==>
+//             (u in g && u.val == v)
+//     ensures forall u:Ref ::
+//         { u.val }
+//         { Map_lookup(result, u) }
+//             u in g ==> Map_lookup(result, u) == u.val            
+//     // ensures forall u: Ref, g1: Set[Ref] :: 
+//     //     { u.val, g1 setminus Set(u) }
+//     //         dum((g1 setminus Set(u)) subset g)
+//     ensures Map_keys(result) == g
+
+
+// function snap(g: Set[Ref]): Map[Ref, Int]
+//     requires NODES(g, wildcard)
+//     ensures forall u:Ref :: 
+//         { Map_lookup(result, u) }
+//             (TERM(u) == Map_lookup(result, u) && 1 in Map_values(result) && u in Map_keys(result))
+//             ==>
+//             (u in g)
+
+
+// Requires defining the following predicates: 
+// - TERM_TRIGGER(u)
+// - TERM(u)
+function snap$Ref$Int(g: Set[Ref]): Map[Ref, Int]
+    requires NODES(g, wildcard)
+    ensures Map_keys(result) == g
+    ensures forall u:Ref ::
+        { TERM_TRIGGER(u) }
+        { Map_lookup(result, u) }
+            u in g ==> Map_lookup(result, u) == TERM(u)
+    ensures forall u:Ref :: 
+        { Map_lookup(result, u) }
+            (TERM(u) == Map_lookup(result, u)
+            && TERM(u) in Map_values(result)
+            && u in Map_keys(result))
+            ==>
+            (u in g)
