@@ -1,29 +1,286 @@
+import "../preamble/generic.vpr"
 
 
-function snap$Ref$Int(g: Set[Ref]): Map[Ref, Int]
-    requires NODES(g, wildcard)
-    ensures Map_keys(result) == g
-    ensures forall u:Ref ::
-        { TERM_TRIGGER(u) }
-        { Map_lookup(result, u) }
-            u in g ==> Map_lookup(result, u) == TERM(u)
-    ensures forall u:Ref :: 
-        { Map_lookup(result, u) }
-            (TERM(u) == Map_lookup(result, u)
-            && TERM(u) in Map_values(result)
-            && u in Map_keys(result))
-            ==>
-            (u in g)
+define ACCESS_NODES(g, $term$, p)
+    (forall n: Ref :: { $term$(n) } n in g ==> acc($term$(n), p))
+
+define ACCESS_FIELD(g, $field$, p)
+    (forall n: Ref :: { n.$field$ } n in g ==> acc(n.$field$, p))
 
 field val: Int
 field id: Int
 field next: Ref
 
-method test( g: Set[Ref] )
-    // requires comp[+,0] i:Int { loc(a,i).val | 0..len(a) }
-    // requires comp[+,0] n:Ref { n.val + (n.next != null ? n.next.id : 0) | g }
-    
+define TERM_1(u) u.val
+// TERM_TRIGGER_1(u) := phi(TERM(u))
+define TERM_TRIGGER_1(u) u.val
+
+
+function snap$Ref$TERM_1$Int(g: Set[Ref]): Map[Ref, Int]
+    requires ACCESS_NODES(g, TERM_1, 1/2)
+    ensures domain(result) == g
+    ensures forall u:Ref ::
+        { TERM_TRIGGER_1(u) }
+        { result[u] }
+            u in g ==> result[u] == TERM_1(u)
+    ensures forall u:Ref :: 
+        { result[u] }
+            (u in domain(result)
+            && TERM_1(u) == result[u]
+            && TERM_1(u) in range(result))
+            ==>
+            (u in g)
+
+
+
+
+
+define TERM_2(n) ( n.val + (n.next != null ? n.next.id : 0) )
+define TERM_TRIGGER_2_A(u) (u.val)
+define TERM_TRIGGER_2_B(u) u.next
+define TERM_TRIGGER_2_C(u) u.next.id
+
+
+define CLOSED(g) (forall n: Ref :: { n.next in g } n in g && n.next != null ==> n.next in g)
+
+function snap$Ref$TERM_2$Int(g: Set[Ref]): Map[Ref, Int]
+    requires ACCESS_FIELD(g, val, 1/2)
+    requires ACCESS_FIELD(g, id, 1/2)
+    requires ACCESS_FIELD(g, next, 1/2)
+    requires CLOSED(g)
+    ensures domain(result) == g
+    ensures forall u:Ref ::
+        { TERM_TRIGGER_2_A(u), TERM_TRIGGER_2_B(u), TERM_TRIGGER_2_C(u) }
+        { result[u] }
+            u in g ==> result[u] == TERM_2(u)
+    ensures forall u:Ref :: 
+        { result[u] }
+            (u in domain(result)
+            && TERM_2(u) == result[u]
+            && TERM_2(u) in range(result))
+            ==>
+            (u in g)
+
+
+// requires comp[+,0] n:Ref { n.val + (n.next != null ? n.next.id : 0) | g }
+define comp2(g) (sum(snap$Ref$TERM_2$Int(g), g))
+
+
+/**
+ * Conclusion: we need to add CLOSED to the precondition of snap 
+ *  if transitive edges are used in TERM. 
+ */
+method test_2( g: Set[Ref], x: Ref )
+    requires ACCESS_FIELD(g, val, 1/1)
+    requires ACCESS_FIELD(g, id, 1/1)
+    requires ACCESS_FIELD(g, next, 1/1)
+    requires CLOSED(g)
+    requires comp2(g) == 42
+
+    requires g == Set(x) && x.next == x
+    requires x.id == 12
 {
+    // assert x.val + x.id == 42
+    // assert x.val == 30
+    
+    x.next := null
+
+    assert comp2(g) == 30
+
+}
 
 
+// import "../preamble/array.vpr"
+
+define TERM_3(i) (loc(a,i).val)
+define TERM_TRIGGER_3(i) (loc(a,i).val)
+
+
+define ACCESS_ARRAY(arr, $field$, p) 
+    (forall i: Int :: { loc(arr,i) } 0 <= i && i < len(arr) ==> acc(loc(arr,i).$field$))
+
+
+// Converting sets to arrays requires an existential quantifier -- not so good
+// function asSeq(g: Set[Ref]): Seq[Ref]
+//     ensures |g| == |result|
+//     ensures forall n:Ref :: 
+//         { n in g } 
+//         { n in result }
+//             n in g <==> n in result
+
+// function range(g: Set[Ref]): Seq[Ref]
+    // ensures 
+
+// Converting arrays to node sets is simpler.
+// function indexSet(a: Map[Int, Ref]): Set[Int]
+//     ensures result == domain(a)
+    // ensures forall i:Int :: 
+    //     { i in result } 
+    //         i in domain(a) <==> i in result
+    // ensures forall n:Ref ::
+    //     {}
+    //         n in range(a) ==> 
+
+// function asSeqindexSet(g: Set[Ref]): Set[Int]
+//     // ensures forall n:Ref :: n in g ==> 
+//     ensures forall i: Int :: { i in result } i in result ==> loc(asSeq(g), i) in g
+//     ensures forall i: Int :: 
+
+// function snap$Int$TERM_3$Int__A(a: IArray): Map[Int, Int]
+//     requires ACCESS_ARRAY(a, val, 1/2)
+//     ensures domain(result) == indexSet(a)
+//     ensures forall u:Int ::
+//         { TERM_TRIGGER_3(u) }
+//         { result[u] }
+//             0 <= u && u < len(a) ==> result[u] == TERM_3(u)
+//     ensures forall u:Int :: 
+//         { result[u] }
+//             (u in domain(result)
+//             && TERM_3(u) == result[u]
+//             && TERM_3(u) in range(result))
+//             ==>
+//             (0 <= u && u < len(a))
+
+domain SubSeqRepr {
+    function indexOf(g: Set[Ref], x: Ref): Int
+    function asSeq(g: Set[Ref]): Map[Int, Ref]
+    
+    axiom seq_injectivity {
+        forall g: Set[Ref], i: Int :: { asSeq(g)[i] }
+            indexOf(g, asSeq(g)[i]) == i 
+    }
+
+    axiom seq_range {
+        forall g: Set[Ref] :: { asSeq(g) }
+            range(asSeq(g)) == g
+    }
+
+    axiom seq_domain {
+        forall g: Set[Ref], i: Int :: 
+            { asSeq(g)[i] } 
+            { i in domain(asSeq(g)) }
+                i in domain(asSeq(g)) <==> asSeq(g)[i] in g
+    }
+
+    // axiom seq_compose {
+    //     forall g1: Set[Ref], g2: Set[Ref] ::
+    //         g1 intersection g2 == Set() ==> 
+    //             asSeq(g1 union g2) == asSeq()
+    // }
+
+    // axiom seq_compose_one {
+    //     forall g: Set[Ref], x: Ref :: 
+    //         !(x in g) ==> asSeq(g union Set(x)) == asSeq(g)[  ]
+    // }
+}
+
+
+// requires comp[+,0] i:Int { asSeq(g)[i].val || 0..|asSeq(g)| } == 42
+define TERM_3__B(i) ( asSeq(g)[i].val )
+define TERM_TRIGGER_3__B(i) ( asSeq(g)[i].val )
+define HEAPNODE_3__B(i) ( asSeq(g)[i] )
+
+
+/**
+ * Conclusion: for array-based footprints, snap turns into lift
+ */
+function snap$Int$TERM_3$Int$__B(g: Set[Ref]): Map[Int, Int]
+    requires !(null in g)
+    requires ACCESS_FIELD(g, val, 1/2)
+    // domain(result) == set of indices
+    ensures domain(result) == domain(asSeq(g))
+    ensures forall u:Int ::
+        { TERM_TRIGGER_3__B(u) }
+        { result[u] }
+            u in domain(asSeq(g)) ==> result[u] == TERM_3__B(u)
+    ensures forall u:Int :: 
+        { result[u] }
+            // (u in domain(result)
+            (asSeq(g)[u] in g
+            && TERM_3__B(u) == result[u]
+            && TERM_3__B(u) in range(result))
+            ==>
+            u in domain(asSeq(g))
+
+
+// method foo(m: Map[Int, Int])
+//     requires 42 in domain(m) && 3 in domain(m) && m[42] == m[3]
+// {
+//     assert false
+// }
+
+define snap(g) snap$Int$TERM_3$Int$__B(g)
+define filt(F$) domain(asSeq(F$))
+
+// Can we go from node sets to array comprehensions? 
+method test3(g: Set[Ref], x:Ref, y:Ref)
+    requires !(null in g)
+    requires ACCESS_FIELD(g, val, 1/1)
+    // requires comp[+,0] i:Int { asSeq(g)[i].val || 0..|asSeq(g)| } == 42
+    requires x in g && y in g && x != y
+    requires x.val == -y.val
+    // requires sum(snap(g), filt(g)) == 42
+
+
+    ensures ACCESS_FIELD(g, val, 1/1)
+    ensures sum(snap(g), filt(g)) == old(sum(snap(g), filt(g)))
+{
+    var F0: Set[Int] := domain(asSeq(g))
+
+
+
+    var tmp: Int := x.val
+    x.val := y.val
+
+    var i: Int := indexOf(g, x)
+
+    // assert 
+    // assert range(asSeq(g setminus Set(x))[ i := x ]) == range(asSeq(g))
+    // assert asSeq(g setminus Set(x))[ i := x ] == asSeq(g)
+    // assert domain(asSeq(g)) == domain(asSeq(g setminus Set(x))) union Set(i)
+
+    
+    assert snap(g)[i] == x.val
+    
+    var F1: Set[Int] := domain(asSeq(g)) setminus Set(i)
+    var R: Map[Int, Int] := snap(g)
+    
+    assert sum(R, Set(i) union F1) == sum(R, F1) + R[i]
+
+    assert sum(R, F1) == old(sum(R, F1))
+
+    assert Set(i) union (domain(asSeq(g)) setminus Set(i)) == domain(asSeq(g))
+    assert sum(R, domain(asSeq(g))) == sum(R, Set(i) union F1)
+    assert sum(R, F0) == sum(R, Set(i) union F1)
+    assert sum(R, F0) == sum(R, F1) + x.val
+    assert sum(R, F0) == old(sum(R, F1)) + x.val
+
+    // assume x.val == 0
+
+    label l1
+
+    y.val := tmp
+
+    i := indexOf(g, y)
+    var F2: Set[Int] := domain(asSeq(g)) setminus Set(i)
+    R := snap(g)
+
+    assert Set(i) union (domain(asSeq(g)) setminus Set(i)) == domain(asSeq(g))
+    assert sum(R, F0) == old[l1](sum(R, F2)) + y.val
+
+    assert x.val == -y.val
+    assert filt(g) == F0
+
+    assert F0 setminus Set(indexOf(g,x)) == F1
+    assert sum(R, F1) == sum(R, F1 setminus Set(indexOf(g,y))) + y.val
+    assert sum(R, F0) == sum(R, F1 setminus Set(indexOf(g,y))) + x.val + y.val
+
+    assert sum(R, F0) == sum(R, F1 setminus Set(indexOf(g,y)))
+    assert sum(R, F1 setminus Set(indexOf(g,y))) == old(sum(snap(g), F1 setminus Set(indexOf(g,y))))
+    assert old(x.val + y.val) == 0
+    // assert old(sum(snap(g), F0)) == old(sum(R, F1 setminus Set(indexOf(g,y))))
+
+    assert sum(R, F0) == sum(old(snap(g)), F0)
+
+    // assert false
 }

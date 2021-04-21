@@ -1,4 +1,4 @@
-import "../map.vpr"
+// import "../map.vpr"
 
 domain SetComp[T, S] {
     function comp(_t: Int, R: Map[T, S], F: Set[T]): S
@@ -17,30 +17,36 @@ domain SetComp[T, S] {
     axiom ax_same_term {
         forall _t: Int, RA: Map[T, S], RB: Map[T, S], F: Set[T] :: 
             { comp(_t, RA, F), comp(_t, RB, F) }
-            { F subset Map_keys(RA), comp(_t, RB, F) }
+            { F subset domain(RA), comp(_t, RB, F) }
                 (forall a: T :: 
-                    { Map_lookup(RA, a) }
-                    { Map_lookup(RB, a) }
-                        a in F ==> Map_lookup(RA, a) == Map_lookup(RB, a))
+                    { RA[a] }
+                    { RB[a] }
+                        a in F ==> RA[a] == RB[a])
                 ==> __syn_comp__(_t, RA, F) == comp(_t, RB, F)
     }
 
     axiom ax_singleton_small {
         forall t: Int, R: Map[T, S], a: T ::
             { comp(t, R, Set(a)) }
-                comp(t, R, Set(a)) == Map_lookup(R, a)
+                comp(t, R, Set(a)) == R[a]
     }
 
     axiom ax_TakeOne_small {
         forall t: Int, R: Map[T, S], a: T, F: Set[T] ::
             { comp(t, R, Set(a) union F) }
             { comp(t, R, F union Set(a)) } 
-            // { Map_lookup(R, a), comp(t, R, F) }
-            // { F setminus Set(a), comp(t, R, F) }
+            // { R[a], comp(t, R, F) }
             // { comp(t, R, F union Set(a)) } 
-            // { comp(t, R, F), Map_lookup(R, a) }
+            // { comp(t, R, F), R[a] }
                 !(a in F) ==> comp(t, R, Set(a) union F) == 
-                    __step__(t, __syn_comp__(t, R, F), Map_lookup(R, a))
+                    __step__(t, __syn_comp__(t, R, F), R[a])
+    }
+
+    axiom ax_DropOne_small {
+        forall t: Int, R: Map[T, S], a: T, F: Set[T] :: 
+            { comp(t, R, F setminus Set(a)) }
+                a in F ==> comp(t, R, F) == 
+                    __step__(t, __syn_comp__(t, R, F setminus Set(a)), R[a])
     }
 
     axiom ax_TakeMultiple_small {
@@ -106,7 +112,7 @@ domain SetSum[T, S] {
 
     axiom ax_positive {
         forall R: Map[T, Int], F: Set[T] ::
-            (forall x: T :: { x in F } x in F ==> Map_lookup(R, x) >= 0) ==> sum(R, F) >= 0
+            (forall x: T :: { x in F } x in F ==> R[x] >= 0) ==> sum(R, F) >= 0
     }
 }
 
