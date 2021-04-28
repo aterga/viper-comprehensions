@@ -63,21 +63,21 @@ define GRAPH(nodes)
 function snap(g: Set [Ref]): Map[Ref, Int]
     requires NODES(g, wildcard)
     ensures forall u:Ref, v:Int :: 
-        { v in Map_values(result), Map_lookup(result, u) }
-        // { v in Map_values(result), u in Map_keys(result) }
-        // { v in Map_values(result), u.val }
-            (v == Map_lookup(result, u) && v in Map_values(result) && u in Map_keys(result))
+        { v in range(result), result[u] }
+        // { v in range(result), u in Map_keys(result) }
+        // { v in range(result), u.val }
+            (v == result[u] && v in range(result) && u in domain(result))
             ==>
             (u in g && v == 1)
     ensures forall u:Ref ::
         { u.left }
         { u.right }
-        { Map_lookup(result, u) }
-            u in g ==> Map_lookup(result, u) == 1
+        { result[u] }
+            u in g ==> result[u] == 1
     // ensures forall u: Ref, g1: Set[Ref] :: 
     //     { u.val, g1 setminus Set(u) }
     //         dum((g1 setminus Set(u)) subset g)
-    ensures Map_keys(result) == g
+    ensures domain(result) == g
 
 
 define FILTER(x) 
