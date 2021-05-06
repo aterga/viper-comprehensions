@@ -100,78 +100,26 @@ define ACCESS_ARRAY(arr, $field$, p)
     (forall i: Int :: { loc(arr,i) } 0 <= i && i < len(arr) ==> acc(loc(arr,i).$field$))
 
 
-// Converting sets to arrays requires an existential quantifier -- not so good
-// function asSeq(g: Set[Ref]): Seq[Ref]
-//     ensures |g| == |result|
-//     ensures forall n:Ref :: 
-//         { n in g } 
-//         { n in result }
-//             n in g <==> n in result
-
-// function range(g: Set[Ref]): Seq[Ref]
-    // ensures 
-
-// Converting arrays to node sets is simpler.
-// function indexSet(a: Map[Int, Ref]): Set[Int]
-//     ensures result == domain(a)
-    // ensures forall i:Int :: 
-    //     { i in result } 
-    //         i in domain(a) <==> i in result
-    // ensures forall n:Ref ::
-    //     {}
-    //         n in range(a) ==> 
-
-// function asSeqindexSet(g: Set[Ref]): Set[Int]
-//     // ensures forall n:Ref :: n in g ==> 
-//     ensures forall i: Int :: { i in result } i in result ==> loc(asSeq(g), i) in g
-//     ensures forall i: Int :: 
-
-// function snap$Int$TERM_3$Int__A(a: IArray): Map[Int, Int]
-//     requires ACCESS_ARRAY(a, val, 1/2)
-//     ensures domain(result) == indexSet(a)
-//     ensures forall u:Int ::
-//         { TERM_TRIGGER_3(u) }
-//         { result[u] }
-//             0 <= u && u < len(a) ==> result[u] == TERM_3(u)
-//     ensures forall u:Int :: 
-//         { result[u] }
-//             (u in domain(result)
-//             && TERM_3(u) == result[u]
-//             && TERM_3(u) in range(result))
-//             ==>
-//             (0 <= u && u < len(a))
-
-domain SubSeqRepr {
-    function indexOf(g: Set[Ref], x: Ref): Int
-    function asSeq(g: Set[Ref]): Map[Int, Ref]
+domain SubSeqRepr[T] {
+    function indexOf(g: Set[Ref], x: Ref): T
+    function asSeq(g: Set[Ref]): Map[T, Ref]
     
-    axiom seq_injectivity {
-        forall g: Set[Ref], i: Int :: { asSeq(g)[i] }
-            indexOf(g, asSeq(g)[i]) == i 
-    }
-
     axiom seq_range {
         forall g: Set[Ref] :: { asSeq(g) }
             range(asSeq(g)) == g
     }
 
+    axiom seq_injectivity {
+        forall g: Set[Ref], i: T :: { asSeq(g)[i] }
+            indexOf(g, asSeq(g)[i]) == i 
+    }
+
     axiom seq_domain {
-        forall g: Set[Ref], i: Int :: 
+        forall g: Set[Ref], i: T :: 
             { asSeq(g)[i] } 
             { i in domain(asSeq(g)) }
                 i in domain(asSeq(g)) <==> asSeq(g)[i] in g
     }
-
-    // axiom seq_compose {
-    //     forall g1: Set[Ref], g2: Set[Ref] ::
-    //         g1 intersection g2 == Set() ==> 
-    //             asSeq(g1 union g2) == asSeq()
-    // }
-
-    // axiom seq_compose_one {
-    //     forall g: Set[Ref], x: Ref :: 
-    //         !(x in g) ==> asSeq(g union Set(x)) == asSeq(g)[  ]
-    // }
 }
 
 

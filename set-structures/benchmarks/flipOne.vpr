@@ -11,6 +11,7 @@ define min_all(g) min(snap(g), g)
 method flipOne_1(g: Set [Ref], x: Ref, m: Int)
 	requires forall n: Ref :: { n.val } n in g ==> acc(n.val)
 	requires x in g
+    // requires g != Set(x)
 
 	requires m == min_all(g) && 0 <= m
     ensures forall n: Ref :: { n.val } n in g ==> acc(n.val)
@@ -22,13 +23,13 @@ method flipOne_1(g: Set [Ref], x: Ref, m: Int)
     assert min(snap(g), Set(x)) == x.val        // UPDATE: triggering issue #1
     assert g setminus Set(x) union Set(x) == g  // SET THEORY: triggering issue #2
     // assert min(snap(g), g) == min(snap(g), g setminus Set(x) union Set(x))  // decomposition
-    assert min(snap(g), g setminus Set(x)) == old(min(snap(g), g setminus Set(x)))  // FRAME: tiggering issue #3
+    assert g != Set(x) ==> min(snap(g), g setminus Set(x)) == old(min(snap(g), g setminus Set(x)))  // FRAME: tiggering issue #3
     // assert min(snap(g), g) == -m
 }
 
 // domain Dummy { function @trig(Int): Bool }
 define update(GRAPH, NODE, $fname, $val) {
-    if (true) {
+    // if (true) {
 
     label l0
     NODE.$fname := $val
@@ -42,6 +43,7 @@ define update(GRAPH, NODE, $fname, $val) {
 method flipOne_1_1_1(g: Set [Ref], x: Ref, m: Int)
 	requires forall n: Ref :: { n.val } n in g ==> acc(n.val)
 	requires x in g
+    // requires g != Set(x)
 
 	requires m == min_all(g) && 0 <= m
     ensures forall n: Ref :: { n.val } n in g ==> acc(n.val)
@@ -53,8 +55,8 @@ method flipOne_1_1_1(g: Set [Ref], x: Ref, m: Int)
     label l1
     // assert min(snap(g), Set(x)) == x.val
     assert g setminus Set(x) union Set(x) == g
-    assert old[l0](min(snap(g), g setminus Set(x))) == min(snap(g), g setminus Set(x))
-    // assert false
+    assert g != Set(x) ==> old[l0](min(snap(g), g setminus Set(x))) == min(snap(g), g setminus Set(x))
+    // //assert false
 }
 
 method flipOne_2(g: Set [Ref], x: Ref, y: Ref, m: Int)
@@ -85,14 +87,14 @@ method flipOne_2(g: Set [Ref], x: Ref, y: Ref, m: Int)
 method flipOne_2_2(g: Set [Ref], x: Ref, y: Ref, m: Int)
 	requires forall n: Ref :: { n.val } n in g ==> acc(n.val)
 	requires x in g && y in g && x != y
-
 	requires m == min_all(g) && 0 <= m
+    
     ensures forall n: Ref :: { n.val } n in g ==> acc(n.val)
     ensures -m == min_all(g)
 {
     update(g, y, val, -1 * m)
-    assert false
-
+    assert -m == min_all(g)
+    // assert false
     update(g, x, val, -1 * m)
 }
 

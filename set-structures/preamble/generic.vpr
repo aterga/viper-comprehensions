@@ -3,55 +3,73 @@
 domain SetComp[T, S] {
     function comp(_t: Int, R: Map[T, S], F: Set[T]): S
     function __syn_comp__(_t: Int, R: Map[T, S], F: Set[T]): S
-    function __step__(_t: Int, left_arg: S, right_arg: S): S
+    
+    function __step__(_t: Int, S, S): S
+
+    axiom CommutativityOfStep {
+        forall _t: Int, _l: S, _r: S :: { __step__(_t, _l, _r) }
+            __step__(_t, _l, _r) == __step__(_t, _r, _l)
+    }
 
     function dum1(bla: Bool): Bool
     function dum2(bla: T): Bool
 
     axiom ax_synonym {
-        forall _t: Int, R: Map[T, Int], F: Set[T] :: 
+        forall _t: Int, R: Map[T, S], F: Set[T] :: 
             { comp(_t, R, F) }
                 __syn_comp__(_t, R, F) == comp(_t, R, F)
     }
 
-    axiom ax_same_term {
-        forall _t: Int, RA: Map[T, S], RB: Map[T, S], F: Set[T] :: 
-            { comp(_t, RA, F), comp(_t, RB, F) }
-            { F subset domain(RA), comp(_t, RB, F) }
-                (forall a: T :: 
-                    { RA[a] }
-                    { RB[a] }
-                        a in F ==> RA[a] == RB[a])
-                ==> __syn_comp__(_t, RA, F) == comp(_t, RB, F)
-    }
-
-    axiom ax_singleton_small {
+    axiom Singleton {
         forall t: Int, R: Map[T, S], a: T ::
             { comp(t, R, Set(a)) }
-                comp(t, R, Set(a)) == R[a]
+                a in domain(R) ==> comp(t, R, Set(a)) == R[a]
     }
 
-    axiom ax_TakeOne_small {
+    axiom SameTerm {
+        forall _t: Int, R1: Map[T, S], R2: Map[T, S], F: Set[T] :: 
+            { comp(_t, R1, F), comp(_t, R2, F) }
+            { F subset domain(R1), comp(_t, R2, F) }
+                F != Set() && 
+                F subset domain(R1) && F subset domain(R2) &&
+                (forall a: T :: 
+                    { R1[a] }
+                    { R2[a] }
+                        a in F ==> R1[a] == R2[a])
+                ==> __syn_comp__(_t, R1, F) == comp(_t, R2, F)
+    }
+
+    axiom DropOne {
+        forall t: Int, R: Map[T, S], a: T, F: Set[T] :: 
+            { comp(t, R, F setminus Set(a)) }
+                a in F && F != Set(a) && F subset domain(R) ==> comp(t, R, F) == 
+                    __step__(t, __syn_comp__(t, R, F setminus Set(a)), R[a])
+    }
+
+    axiom TakeOne {
         forall t: Int, R: Map[T, S], a: T, F: Set[T] ::
-            { comp(t, R, Set(a) union F) }
+            { comp(t, R, Set(a) union F) } 
             { comp(t, R, F union Set(a)) } 
             // { R[a], comp(t, R, F) }
             // { comp(t, R, F union Set(a)) } 
             // { comp(t, R, F), R[a] }
-                !(a in F) ==> comp(t, R, Set(a) union F) == 
+                F != Set() && F subset domain(R) && a in domain(R) && !(a in F) ==> comp(t, R, Set(a) union F) == 
                     __step__(t, __syn_comp__(t, R, F), R[a])
     }
 
-    axiom ax_DropOne_small {
-        forall t: Int, R: Map[T, S], a: T, F: Set[T] :: 
-            { comp(t, R, F setminus Set(a)) }
-                a in F ==> comp(t, R, F) == 
-                    __step__(t, __syn_comp__(t, R, F setminus Set(a)), R[a])
+
+    axiom DropMultiple {
+        forall t: Int, R: Map[T, S], A: Set[T], F: Set[T] :: 
+            { comp(t, R, F setminus A) }
+                A != F && A != Set() && F subset domain(R) && 
+                A subset F ==> comp(t, R, F) == 
+                    __step__(t, __syn_comp__(t, R, F setminus A), __syn_comp__(t, R, A))
     }
 
-    axiom ax_TakeMultiple_small {
+    axiom TakeMultiple {
         forall t: Int, R: Map[T, S], F1: Set[T], F2: Set[T] :: 
             { comp(t, R, F1 union F2) }
+                F1 != Set() && F2 != Set() && F1 subset domain(R) && F2 subset domain(R) &&
                 F1 intersection F2 == Set() ==>
                     comp(t, R, F1 union F2) ==__step__(t, 
                         __syn_comp__(t, R, F1), __syn_comp__(t, R, F2))
@@ -110,27 +128,18 @@ domain SetSum[T, S] {
 
     // Sum-specific axioms
 
-    axiom ax_positive {
-        forall R: Map[T, Int], F: Set[T] ::
+    axiom EmptySumFilter {
+        (forall R: Map[T, Int], F: Set[T] :: { sum(R, F) }
+            F == Set() ==> sum(R, F) == 0) //&& 
+        // (forall R: Map[T, Int] :: { sum(R, Set()) }
+        //     sum(R, Set()) == 0)  
+    }
+
+    axiom IntSumPositive {
+        forall R: Map[T, Int], F: Set[T] :: { sum(R, F) }
+            F != Set() && F subset domain(R) && 
             (forall x: T :: { x in F } x in F ==> R[x] >= 0) ==> sum(R, F) >= 0
     }
-}
-
-domain CountSet[T, S] {
-    function count(R: Map[T, S], F: Set[T]): S
-    
-    axiom ax_count {
-        forall R: Map[T, S], F: Set[T] ::
-            { count(R, F) }
-                count(R, F) == comp(__kind_count__, R, F)
-    }
-
-    axiom ax_count_step {
-        forall x: Int, y: Int :: 
-            { __step__(__kind_count__, x, y) }
-                __step__(__kind_count__, x, y) == x + y
-    }
-
 }
 
 // define UPDATE(GRAPH, NODE, fieldname, value) {
@@ -145,3 +154,6 @@ domain CountSet[T, S] {
 //             == min(snap(GRAPH), GRAPH setminus Set(NODE))
 //     }
 // }
+
+
+define count(R, F) sum(R, F)

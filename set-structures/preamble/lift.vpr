@@ -1,0 +1,21 @@
+domain SubSeqRepr[T] {
+    function indexOf(g: Set[Ref], x: Ref): T
+    function lift(g: Set[Ref]): Map[T, Ref]
+    
+    axiom LiftRange {
+        forall g: Set[Ref] :: { lift(g) }
+            range(lift(g)) == g
+    }
+
+    axiom LiftInjectivity {
+        forall g: Set[Ref], i: T :: { lift(g)[i] }
+            indexOf(g, lift(g)[i]) == i 
+    }
+
+    axiom LiftDomain {
+        forall g: Set[Ref], i: T :: 
+            { lift(g)[i] } 
+            { i in domain(lift(g)) }
+                i in domain(lift(g)) <==> lift(g)[i] in g
+    }
+}
