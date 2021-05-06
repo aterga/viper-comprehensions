@@ -1,0 +1,7 @@
+function filt$Ref(g: Set[Ref]): Set[Ref]
+    requires NODES(g, p)
+    ensures result subset g
+    ensures forall u: Ref :: 
+        { u in result }
+        { TAU_FILTER(u) } 
+            u in g ==> (u in result <==> FILTER(u))
