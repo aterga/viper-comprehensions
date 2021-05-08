@@ -1,0 +1,27 @@
+domain LiftStruct { 
+    function indexOf(Set[Ref], Set[ Ref ]): Int
+    function lift(Set[Ref], Set[ Ref ]): Map[Int, Ref]
+    function size(Map[Int, Ref]): Int
+
+    axiom LiftRange {
+        forall g: Set[Ref], xs: Set[ Ref ] :: 
+            { lift(g, xs) }
+                xs subset g ==> 
+                    range(lift(g, xs)) == xs
+    }
+
+    axiom LiftSizes {
+        forall g: Set[Ref], xs: Set[ Ref ] :: 
+            { size(lift(g, xs)) } 
+                xs subset g ==> 
+                    0 <= size(lift(g, xs))
+    }
+
+    axiom LiftIndices {
+        forall g: Set[Ref], xs: Set[ Ref ], i: Int :: 
+            { i in domain(lift(g, xs)) }
+                xs subset g ==> 
+                    (0 <= i && i < size(lift(g, xs)) <==> i in domain(lift(g, xs)))
+    }
+
+}

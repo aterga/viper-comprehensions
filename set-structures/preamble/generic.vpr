@@ -135,11 +135,18 @@ domain SetSum[T, S] {
         //     sum(R, Set()) == 0)  
     }
 
+    axiom IntSumZero {
+        forall R: Map[T, Int], F: Set[T] :: { sum(R, F) }
+            F != Set() && F subset domain(R) && 
+            (forall x: T :: { R[x] } x in F ==> R[x] == 0) ==> sum(R, F) == 0
+    }
+
     axiom IntSumPositive {
         forall R: Map[T, Int], F: Set[T] :: { sum(R, F) }
             F != Set() && F subset domain(R) && 
-            (forall x: T :: { x in F } x in F ==> R[x] >= 0) ==> sum(R, F) >= 0
+            (forall x: T :: { R[x] } x in F ==> R[x] >= 0) ==> sum(R, F) >= 0
     }
+
 }
 
 // define UPDATE(GRAPH, NODE, fieldname, value) {

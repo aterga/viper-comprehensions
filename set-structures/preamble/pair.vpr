@@ -1,0 +1,41 @@
+domain Pair[A, B] {
+    function pair(A, B): Pair[A, B]
+    function first(Pair[A, B]): A
+    function second(Pair[A, B]): B
+
+    axiom AlgebraicPair {
+        (forall a: A, b: B :: 
+            { pair(a,b) }
+                a == first(pair(a,b)) && b == second(pair(a,b))) 
+        // &&
+        // (forall pair: Pair[A,B] :: 
+        //     { first(pair) }
+        //     { second(pair) }
+        //         pair == pair(first(pair), second(pair)) )
+
+    }
+
+    function DirectProduct(Set[A], Set[B]): Set[Pair[A, B]]
+    function First(Set[Pair[A, B]]): Set[A]
+    function Second(Set[Pair[A, B]]): Set[B]
+    axiom {
+        forall X: Set[A], Y: Set[B], p: Pair[A,B] :: 
+            { p in DirectProduct(X, Y) }
+            { first(p) in X, second(p) in Y }
+                p in DirectProduct(X, Y) <==> first(p) in X && second(p) in Y
+    }
+    axiom {
+        (forall X: Set[A], Y: Set[B] ::
+            { DirectProduct(X, Y) }
+                First(DirectProduct(X, Y)) == X && Second(DirectProduct(X, Y)) == Y)
+        // && (forall D: Set[Pair[A, B]] :: 
+        //     { First(D) }
+        //     { Second(D) }
+        //         D == DirectProduct(First(D), Second(D)))
+    }
+    axiom {
+        forall p:Pair[Int,Int], q:Pair[Int,Int] :: 
+            { first(p), first(q), second(p), second(q) }
+                p == q <==> first(p) == first(q) && second(p) == second(q)
+    }
+}

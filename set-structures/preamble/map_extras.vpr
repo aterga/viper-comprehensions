@@ -1,0 +1,13 @@
+domain MapExtras[K, V] {
+    function disjoint(Map[K, V], Map[K, V]): Bool
+    axiom {
+        (forall m1 : Map[K, V], m2 : Map[K, V] :: { disjoint(m1, m2) }
+            disjoint(m1, m2) ==>
+                forall k : K :: { k in domain(m1) } {k in domain(m2) }
+                !(k in domain(m1)) || !(k in domain(m2)))   
+        
+        && (forall m1 : Map[K, V], m2 : Map[K, V] :: { disjoint(m1, m2) }
+            !disjoint(m1, m2) ==>
+                (exists k : K :: (k in domain(m1)) && (k in domain(m2))))
+    }
+}
