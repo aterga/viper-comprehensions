@@ -29,12 +29,12 @@ domain SetComp[T, S] {
     axiom SameTerm {
         forall _t: Int, R1: Map[T, S], R2: Map[T, S], F: Set[T] :: 
             { comp(_t, R1, F), comp(_t, R2, F) }
-            { F subset domain(R1), comp(_t, R2, F) }
+            // { F subset domain(R1), comp(_t, R2, F) }  very bad for MinArraySum
                 F != Set() && 
                 F subset domain(R1) && F subset domain(R2) &&
                 (forall a: T :: 
-                    { R1[a] }
-                    { R2[a] }
+                    { R1[a], R2[a] }
+                    // { R2[a] }
                         a in F ==> R1[a] == R2[a])
                 ==> __syn_comp__(_t, R1, F) == comp(_t, R2, F)
     }
@@ -53,10 +53,10 @@ domain SetComp[T, S] {
             // { R[a], comp(t, R, F) }
             // { comp(t, R, F union Set(a)) } 
             // { comp(t, R, F), R[a] }
-                F != Set() && F subset domain(R) && a in domain(R) && !(a in F) ==> comp(t, R, Set(a) union F) == 
-                    __step__(t, __syn_comp__(t, R, F), R[a])
+                F != Set() && F subset domain(R) && a in domain(R) && !(a in F) ==> 
+                    comp(t, R, Set(a) union F) == 
+                        __step__(t, __syn_comp__(t, R, F), R[a])
     }
-
 
     axiom DropMultiple {
         forall t: Int, R: Map[T, S], A: Set[T], F: Set[T] :: 
@@ -75,19 +75,20 @@ domain SetComp[T, S] {
                         __syn_comp__(t, R, F1), __syn_comp__(t, R, F2))
     }
 
-    // axiom ax_TakeMultiple {
-    //     forall t: Int, R: Map[T, S], F: Set[T], F1: Set[T], F2: Set[T] :: 
-    //         { comp(t, R, F), F1 union F2 }
-    //             F == F1 union F2 && F1 intersection F2 == Set() ==>
-    //                 comp(t, R, F) == __step__(t, 
-    //                     __syn_comp__(t, R, F1), __syn_comp__(t, R, F2))
-    // }
+    axiom ax_TakeMultiple {
+        forall t: Int, R: Map[T, S], F: Set[T], F1: Set[T], F2: Set[T] :: 
+            { comp(t, R, F), F1 union F2 }
+                F == F1 union F2 && F1 intersection F2 == Set() ==>
+                    comp(t, R, F) == __step__(t, 
+                        __syn_comp__(t, R, F1), __syn_comp__(t, R, F2))
+    }
 }
 
 
-define __kind_count__ 2
 define __kind_sum__ 1
 define __kind_min__ 0
+
+define __min__($left, $right) __step__(__kind_min__, $left, $right)
 
 
 domain SetMin[T, S] {

@@ -1,0 +1,14 @@
+domain SetExtras[T] {
+    function DISJOINT(Set[T], Set[T]): Bool
+    axiom { forall A: Set[T], B: Set[T] :: 
+            { DISJOINT(A, B) } 
+            DISJOINT(A, B) <==> (forall r0: T :: { r0 in A, r0 in B } (r0 in A) ==> !(r0 in B)) }
+    axiom { forall S1: Set[T], S2: Set[T] :: 
+            { S1 union S2 } 
+                (S2 == Set() ==> S1 union S2 == S1) && 
+                (S1 == Set() ==> S1 union S2 == S2)
+    }
+    axiom { forall S1: Set[T], S2: Set[T] :: 
+            { S1 union S2 } 
+                S1 union S2 == S2 union S1}
+}
