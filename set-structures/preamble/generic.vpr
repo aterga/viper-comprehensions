@@ -29,7 +29,7 @@ domain SetComp[T, S] {
     axiom SameTerm {
         forall _t: Int, R1: Map[T, S], R2: Map[T, S], F: Set[T] :: 
             { comp(_t, R1, F), comp(_t, R2, F) }
-            // { F subset domain(R1), comp(_t, R2, F) }  very bad for MinArraySum
+            { F subset domain(R1), comp(_t, R2, F) }  // very bad for MinArraySum
                 F != Set() && 
                 F subset domain(R1) && F subset domain(R2) &&
                 (forall a: T :: 
@@ -74,14 +74,6 @@ domain SetComp[T, S] {
                     comp(t, R, F1 union F2) ==__step__(t, 
                         __syn_comp__(t, R, F1), __syn_comp__(t, R, F2))
     }
-
-    axiom ax_TakeMultiple {
-        forall t: Int, R: Map[T, S], F: Set[T], F1: Set[T], F2: Set[T] :: 
-            { comp(t, R, F), F1 union F2 }
-                F == F1 union F2 && F1 intersection F2 == Set() ==>
-                    comp(t, R, F) == __step__(t, 
-                        __syn_comp__(t, R, F1), __syn_comp__(t, R, F2))
-    }
 }
 
 
@@ -107,6 +99,21 @@ domain SetMin[T, S] {
                 (__step__(__kind_min__, x, y) == x || __step__(__kind_min__, x, y) == y)
                 && __step__(__kind_min__, x, y) <= x
                 && __step__(__kind_min__, x, y) <= y
+    }
+
+    function $dist(R1: Map[T, Int], R2: Map[T, Int], F: Set[T]): Int
+    axiom {
+        forall R1: Map[T, Int], R2: Map[T, Int], F: Set[T] :: 
+            { min(R1, F), min(R2, F) }
+                (F != Set() && F subset domain(R1) && F subset domain(R2) && 
+                R1 != R2 &&
+                (forall a: T, b: T :: 
+                    { R1[a], R1[b], R2[a], R2[b] }//{ a in F, b in F }
+                        a != b && a in F && b in F ==> R1[a]-R2[a] == R1[b]-R2[b])) ==> 
+                    ((min(R1, F) == min(R2, F) + $dist(R1,R2,F))) 
+                    && 
+                    (forall a: T :: { R1[a], R2[a] }
+                        a in F ==> R1[a]-R2[a] == $dist(R1,R2,F))
     }
 }
 
