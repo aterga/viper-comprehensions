@@ -42,16 +42,16 @@ method binarySearch_v1(a: Array, target: Int, lo: Int, hi: Int)
 
         res := (res1 || res2)
 
-        // assert count(old(a2s(a)), lo, hi) > 0 ==> res1 || res2
+        assert count(old(a2s(a)), lo, hi) > 0 ==> res1 || res2
 
 
-        // assert count(old(a2s(a)), lo, pivot) > 0 <==> res1
-        // assert count(old(a2s(a)), pivot, hi) > 0 <==> res2
+        assert count(old(a2s(a)), lo, pivot) > 0 <==> res1
+        assert count(old(a2s(a)), pivot, hi) > 0 <==> res2
 
-        // assert res1 || res2 ==> 
-        //     (count(old(a2s(a)), lo, pivot) + count(old(a2s(a)), pivot, hi)) > 0
+        assert res1 || res2 ==> 
+            (count(old(a2s(a)), lo, pivot) + count(old(a2s(a)), pivot, hi)) > 0
         
-        // assert res1 || res2 ==> count(old(a2s(a)), lo, hi) > 0
+        assert res1 || res2 ==> count(old(a2s(a)), lo, hi) > 0
 
     }
 }

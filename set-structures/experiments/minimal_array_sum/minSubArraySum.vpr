@@ -4,6 +4,8 @@ define array(g) lift(g,g)
 import "../../preamble/generic.vpr"
 import "../../preamble/set_extras.vpr"
 
+define size(Q) |domain(Q)|
+
 field val: Int
 
 define NODES(g, p)
@@ -40,7 +42,7 @@ function snap1(g: Set[Ref], lift_1: Map[Int, Ref]): Map[Int, Int]
 function snap2(g: Set[Ref], lift_1: Map[Int, Ref], j: Int): Map[Int, Int]
     requires NODES(g, 1/2)
     requires range(lift_1) == g
-    ensures domain(result) == domain(lift_1) union Set(size(lift_1))
+    ensures domain(result) == domain(lift_1) //union Set(size(lift_1))
     ensures forall i:Int :: 
         { result[i] }
             i in domain(result) ==> 
@@ -98,7 +100,7 @@ method minSubArraySum(g: Set[Ref]) returns (res: Int)
         var R1: Map[Int, Int] := snap2(g, array(g), n+1)
         var F0: Set[Int] := filt(0, n)
         var F1: Set[Int] := filt(0, n+1)
-        assert F1 == F0 union Set(n)
+        // assert F1 == F0 union Set(n)
         // assume n > 0
 
         // Distributivity -- done
@@ -121,27 +123,64 @@ method minSubArraySum(g: Set[Ref]) returns (res: Int)
         // assert forall i: Int :: { filt(i, n) }
         //     0 <= i && i < n ==> 
         //             (filt(i, n+1) == filt(i, n) union filt(n, n+1)) 
-                        // && filt(n, n+1) != Set() && filt(i, n) != Set() 
-                        // && filt(n, n+1) intersection filt(i, n) == Set()
-                        // && filt(n, n+1) subset domain(snap1(g, array(g)))
-                        // && filt(i, n) subset domain(snap1(g, array(g)))
+        //                 && filt(n, n+1) != Set() && filt(i, n) != Set() 
+        //                 && filt(n, n+1) intersection filt(i, n) == Set()
+        //                 && filt(n, n+1) subset domain(snap1(g, array(g)))
+        //                 && filt(i, n) subset domain(snap1(g, array(g)))
 
         // assert forall i: Int :: { R0[i], R1[i] }
         //     0 <= i && i < n ==> 
         //             sum(snap1(g, array(g)), filt(i, n+1)) == 
         //             sum(snap1(g, array(g)), filt(i, n)) + sum(snap1(g, array(g)), filt(n, n+1))
-                    
-        // assert (forall a: Int, b: Int :: { R0[a], R1[a], R0[b], R1[b] }
-        //     a in F0 && b in F0 ==> R0[a]-R1[a] == R0[b]-R1[b])
+        
+        assert 0 < n ==> filt(0, n+1) == filt(0, n) union filt(n, n+1)
+        // assert forall i: Int :: 
+        //     0 <= i && i < n ==> filt(i, n+1) == filt(i, n) union filt(n, n+1)
 
-        // // assert n > 0 ==> $dist(R0,R1,F0) == R0[0]-R1[0]
+        // assert (forall a: Int, b: Int :: { R0[a], R1[a], R0[b], R1[b] }
+        //     a in F0 && b in F0 ==> R1[a]+R0[b] == R1[b]+R0[a])
+
+        // assert n > 0 ==> $dist(R0,R1,F0) == R0[0]-R1[0]
 
         // assert (forall a: Int, b: Int :: 
-        //             { R0[a], R0[b] }{ R1[a], R1[b] }
-        //             { R0[a], R1[b] }{ R0[b], R1[a] }
+        //             // { R0[a], R0[b] }{ R1[a], R1[b] }
+        //             // { R0[a], R1[b] }{ R0[b], R1[a] }
+        //             { R0[a], R0[b], R1[a], R1[b] }
         //             { a in F0, b in F0 }
         //                 a in F0 && b in F0 ==> R0[a]-R1[a] == R0[b]-R1[b])
-        assume min(R1, F0) == min(R0, F0) + array_(n)
+
+
+        // assert R0 != R1
+        // assert F0 != Set()
+        // assert min(R1, F0) == min(R0, F0) + array_(n)
+        // assert min(R0, F0) == min(R1, F0) + $dist(R0,R1,F0)
+        // assert $dist(R0,R1,F0) == array_(n)
+        // assert range(R1) setminus range(R0) == Set(n)
+        // assert dum(range(R1) setminus range(R0))
+        
+        // assume min(R1, F0) == min(R0, F0) + array_(n)
+        
+        // assume n > 0
+        // assume R0 != R1
+        // assert F0 != Set() && F0 subset domain(R0) && F0 subset domain(R1) 
+        // assert $dist(R0,R1,F0) == -$dist(R1,R0,F0)
+        // assert min(R1, F0) == min(R0, F0) + $dist(R1,R0,F0)
+        // assert (forall a: Int :: 
+        //                 { R0[a], R1[a] }
+        //                 { dum(a) }
+        //                 a in F0 ==> R0[a]-R1[a] == $dist(R0,R1,F0))
+        // assert pick(F0,R0) in domain(R0)
+        // assert pick(F0,R0) in domain(R1)
+        // assert pick(F0,R0) in F0
+        // assert $dist(R0,R1,F0) == R0[pick(F0,R0)] - R1[pick(F0,R0)]
+        // assert $dist(R1,R0,F0) == array_(n) || $dist(R1,R0,F0) == -array_(n)
+        
+        // assert array_(n) == $dist(R1,R0,F0)
+        assert n > 0 ==> min(R1, F0) == min(R0, F0) + array_(n)
+        // assert false
+
+        // assume false
+
         // assert false
         // assume false
         
@@ -165,16 +204,16 @@ method minSubArraySum(g: Set[Ref]) returns (res: Int)
 
         // Proof outline for Y
         // assert y == __min__(0, y0 + array_(n))
-        // assert min(R0, F0) + array_(n) == min(R1, F0)
-        // assert F1 == F0 union Set(n)
+        // assert min(R0, F0) + array_(n) == min(R1, F0)  // distributivity 
+        // assert F1 == F0 union Set(n)                   // disj union
         // assert !(n in F0)
-        // assert F1 subset domain(R1)
-        // assert min(R1, F1) == __min__(min(R1, F0), min(R1, Set(n)))
-        // assert min(R1, Set(n)) == R1[n]
-        // assert R1[n] == sum(snap1(g, array(g)), filt(n, n+1))
-        // assert n in domain(snap1(g, array(g)))
-        // assert filt(n, n+1) == Set(n)
-        // assert sum(snap1(g, array(g)), filt(n, n+1)) == snap1(g, array(g))[n]
+        // assert F1 subset domain(R1)                    // good filter
+        // assert min(R1, F1) == __min__(min(R1, F0), min(R1, Set(n))) // decomposition A
+        // assert min(R1, Set(n)) == R1[n]                // singleton comprehension
+        // assert R1[n] == sum(snap1(g, array(g)), filt(n, n+1))       // snapshot lookup 
+        // assert n in domain(snap1(g, array(g)))         
+        // assert filt(n, n+1) == Set(n)                  // Singleton decomposition
+        // assert sum(snap1(g, array(g)), filt(n, n+1)) == snap1(g, array(g))[n]  
         // assert __min__(0, __min__(array_(n), min(R1, F0))) == __min__(0, min(R1, F1))
         // assert __min__(0, __min__(array_(n), min(R0, F0) + array_(n))) == __min__(0, __min__(array_(n), min(R1, F0)))
         // assert __min__(0, __min__(0, min(R0, F0)) + array_(n)) == __min__(0, __min__(array_(n), min(R0, F0) + array_(n)))

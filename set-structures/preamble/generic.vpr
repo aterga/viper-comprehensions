@@ -77,6 +77,7 @@ domain SetComp[T, S] {
 }
 
 
+define __kind_prod__ 2
 define __kind_sum__ 1
 define __kind_min__ 0
 
@@ -161,6 +162,23 @@ domain SetSum[T, S] {
             (forall x: T :: { R[x] } x in F ==> R[x] >= 0) ==> sum(R, F) >= 0
     }
 
+}
+
+domain SetProd[T, S] {
+
+    function prod(R: Map[T, S], F: Set[T]): S
+
+    axiom ax_prod {
+        forall R: Map[T, S], F: Set[T] ::
+            { prod(R, F) }
+                prod(R, F) == comp(__kind_prod__, R, F)
+    }
+
+    axiom ax_prod_step {
+        forall x: Int, y: Int :: 
+            { __step__(__kind_prod__, x, y) }
+                __step__(__kind_prod__, x, y) == x * y
+    }
 }
 
 // define UPDATE(GRAPH, NODE, fieldname, value) {

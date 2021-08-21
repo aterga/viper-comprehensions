@@ -1,4 +1,4 @@
-domain Array {
+domain Array { 
     function loc(a: Array, i: Int): Ref
     function len(a: Array): Int
     function first(r: Ref): Array

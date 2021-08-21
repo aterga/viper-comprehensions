@@ -1,4 +1,5 @@
-import "generic.vpr"
+import "preamble/generic.vpr"
+// import "preamble/graph/snap.vpr"
 
 
 
@@ -8,46 +9,50 @@ field val: Int
 
 field marked: Bool
 
-define ACCESS_NODES(g, p)
+define NODES(g, p)
+    !(null in g) && 
     (forall n: Ref :: { n.val } n in g ==> acc(n.val, p))
-domain Dummy {
-    function dum(d: Bool): Bool
-}
+
+// domain Dummy {
+//     function dum(d: Bool): Bool
+// }
+
 function snap1(g: Set [Ref]): Map[Ref, Int]
-    requires ACCESS_NODES(g, wildcard)
+    requires NODES(g, 1/2)
     ensures forall u:Ref, v:Int :: 
-        { v in Map_values(result), Map_lookup(result, u) }
+        { v in range(result), result[u] }
         // { v in Map_values(result), u in Map_keys(result) }
         // { v in Map_values(result), u.val }
-            (v == Map_lookup(result, u) && v in Map_values(result) && u in Map_keys(result))
+            (v == result[u] && v in range(result) && u in domain(result))
             ==>
             (u in g && abs(u.val) == v)
     ensures forall u:Ref ::
         { u.val }
-        { Map_lookup(result, u) }
-            u in g ==> Map_lookup(result, u) == abs(u.val)
+        { result[u] }
+            u in g ==> result[u] == abs(u.val)
     // ensures forall u: Ref, g1: Set[Ref] :: 
     //     { u.val, g1 setminus Set(u) }
     //         dum((g1 setminus Set(u)) subset g)
-    ensures Map_keys(result) == g
+    ensures domain(result) == g
+  
 
 function snap(g: Set [Ref]): Map[Ref, Int]
-    requires ACCESS_NODES(g, wildcard)
+    requires NODES(g, 1/2)
     ensures forall u:Ref, v:Int :: 
-        { v in Map_values(result), Map_lookup(result, u) }
+        { v in range(result), result[u] }
         // { v in Map_values(result), u in Map_keys(result) }
         // { v in Map_values(result), u.val }
-            (v == Map_lookup(result, u) && v in Map_values(result) && u in Map_keys(result))
+            (v == result[u] && v in range(result) && u in domain(result))
             ==>
             (u in g && u.val == v)
     ensures forall u:Ref ::
         { u.val }
-        { Map_lookup(result, u) }
-            u in g ==> Map_lookup(result, u) == u.val
+        { result[u] }
+            u in g ==> result[u] == u.val
     // ensures forall u: Ref, g1: Set[Ref] :: 
     //     { u.val, g1 setminus Set(u) }
     //         dum((g1 setminus Set(u)) subset g)
-    ensures Map_keys(result) == g
+    ensures domain(result) == g
 
 
 define CLOSED_for(g, $field$)

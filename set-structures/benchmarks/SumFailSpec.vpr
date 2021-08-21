@@ -1,0 +1,53 @@
+import "../preamble/substruct/lift.vpr"
+
+define array(g) lift(g,g)
+define size(Q) |domain(Q)|
+define array_($index) lift(g,g)[$index].val
+
+import "../preamble/generic.vpr"
+import "../preamble/set_extras.vpr"
+
+field val: Int
+define NODES(g, p)
+    !(null in g) && 
+    (forall n: Ref :: { n.val } n in g ==> acc(n.val, p))
+
+
+function filt(lo: Int, hi: Int): Set[Int]
+    ensures forall k: Int :: 
+        { k in result } 
+            k in result <==> lo <= k && k < hi
+    ensures hi <= lo <==> result == Set()
+    ensures hi == lo+1 <==> result == Set(lo)
+    ensures forall mid:Int :: { filt(lo, mid), filt(mid,hi) } 
+        mid != lo && mid != hi ==> 
+            result == filt(lo, mid) union filt(mid, hi)
+
+function snap(g: Set[Ref], lift_1: Map[Int, Ref]): Map[Int, Int]
+    requires NODES(g, 1/2)
+    requires range(lift_1) == g
+    ensures domain(result) == domain(lift_1)
+    ensures forall u:Int :: 
+        { result[u] }
+            u in domain(result) ==> 
+                result[u] == lift_1[u].val
+
+
+method ArraySum(g: Set[Ref]) returns (res: Int)
+    requires NODES(g, 1/2)
+    ensures NODES(g, 1/2)
+    ensures res == sum(snap(g, array(g)), filt(0, size(array(g))))
+{
+    var i: Int := 0
+    res := 0 
+    while (i < size(array(g))) 
+        invariant NODES(g, 1/2)
+        invariant 0 <= i && i <= size(array(g))
+        invariant res == sum(snap(g, array(g)), filt(0, i-1))
+    {
+        res := res + array_(i)
+        assert filt(0, i+1) == filt(0, i) union Set(i)
+
+        i := i + 1
+    }
+}
