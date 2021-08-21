@@ -1,0 +1,67 @@
+import "../preamble/generic.vpr"
+// import "../preamble/graph/snap.vpr"
+
+
+field val: Int
+
+function iSnap(n: Int): Map[Int, Int]
+    requires 0 <= n
+    ensures 0 == n ==> result == Map(1 := 1)
+    ensures 0 < n ==> (domain(result) == oneToN(n) && range(result) == domain(result) && forall u:Int ::
+        { result[u] }
+        { u in domain(result) }
+        { u in range(result) }
+            u in range(result) <==> u in domain(result) && result[u] == u)
+
+function oneToN(n: Int): Set[Int]
+    requires 0 <= n
+    ensures 0 == n ==> result == Set(1)
+    ensures 0 < n ==> (n in result && forall i:Int :: { i in result } (1 <= i && i <= n) <==> i in result)
+
+method factorial(x: Int) returns (res: Int)
+    requires x >= 0
+    
+    // ensures comp[*,1] i:Int [ i || 1 <= i < x ]
+    ensures res == prod(iSnap(x), oneToN(x))
+{
+    if (x < 2) {
+        res := 1
+        
+        assert oneToN(x) == Set(1)  // Caused by Viper's set axiomatization incompleteness
+        // assert x == 1 ==> iSnap(x) == Map(1 := 1) && oneToN(x) == Set(1)
+        // assert res == prod(iSnap(x), oneToN(x))
+
+        
+    } else {
+        // assert x >= 2
+
+        var res1: Int 
+        res1 := factorial(x-1)
+        // assert 2 <= x-1 ==> res1 == prod(iSnap(x-1), oneToN(x-1))
+        // assert 2 <= (x-1) ==> res1 == (x-1) * prod(iSnap(x-1), oneToN(x-1))
+        res := x * res1
+
+        // assert 2 <= x-1 ==> res == x * prod(iSnap(x-1), oneToN(x-1))
+        // assert 2 <= x-1 ==> res == x * prod(iSnap(x), oneToN(x-1))
+        // assert 2 <= x-1 ==> res == prod(iSnap(x), oneToN(x-1) union Set(x))
+        assert oneToN(x-1) union Set(x) == oneToN(x)  // Caused by the comprehensions incompleteness
+        // assert 2 <= x-1 ==> res == prod(iSnap(x), oneToN(x))
+        // assert 3 <= x ==> res == prod(iSnap(x), oneToN(x))
+
+        // assert x == 2 ==> res1 == prod(iSnap(1), oneToN(1))
+        // assert oneToN(1) == Set(1)
+        // assert iSnap(1) == Map(1 := 1)
+        // assert x == 2 ==> res == 2 * prod(Map(1 := 1), Set(1))
+        // assert x == 2 ==> res == 2 * prod(Map(1 := 1, 2:=2), Set(1))
+        // assert x == 2 ==> res == prod(Map(1 := 1, 2:=2), Set(1) union Set(2))
+        // assert Set(1) union Set(2) == Set(1, 2)
+        // assert x == 2 ==> res == prod(Map(1:=1, 2:=2), Set(1, 2))
+        // assert iSnap(2) == Map(1:=1, 2:=2)
+        // assert oneToN(2) == Set(1, 2)
+        // assert x == 2 ==> res == prod(iSnap(x), oneToN(x))
+
+        // assert res == prod(iSnap(x), oneToN(x))
+
+        // assert false
+    }
+}
