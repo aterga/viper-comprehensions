@@ -101,19 +101,25 @@ domain SetMin[T, S] {
                 && __step__(__kind_min__, x, y) <= y
     }
 
-    function $dist(R1: Map[T, Int], R2: Map[T, Int], F: Set[T]): Int
+    function pick(F: Set[T]): T
     axiom {
-        forall R1: Map[T, Int], R2: Map[T, Int], F: Set[T] :: 
-            { min(R1, F), min(R2, F) }
-                (F != Set() && F subset domain(R1) && F subset domain(R2) && 
-                R1 != R2 &&
-                (forall a: T, b: T :: 
-                    { R1[a], R1[b], R2[a], R2[b] }//{ a in F, b in F }
-                        a != b && a in F && b in F ==> R1[a]-R2[a] == R1[b]-R2[b])) ==> 
-                    ((min(R1, F) == min(R2, F) + $dist(R1,R2,F))) 
-                    && 
-                    (forall a: T :: { R1[a], R2[a] }
-                        a in F ==> R1[a]-R2[a] == $dist(R1,R2,F))
+        forall F: Set[T] :: { pick(F) }
+            F != Set() ==> pick(F) in F
+    }
+    function dum(a: T): Bool
+    axiom {
+        forall a:T :: {dum(a)} dum(a)
+    }
+    axiom {
+        forall R0: Map[Int, Int], R1: Map[Int, Int], F0: Set[Int] :: 
+            { min(R0, F0), min(R1, F0) }
+                (F0 != Set() && F0 subset domain(R0) && F0 subset domain(R1) && 
+                R0 != R1 && 
+                (forall a: Int, b: Int :: 
+                    { R0[a], R0[b], R1[a], R1[b] }
+                        a in F0 && b in F0 ==> R0[b]+R1[a] == R1[b]+R0[a])) ==> 
+                    (min(R0, F0) + R1[pick(F0)] == 
+                     min(R1, F0) + R0[pick(F0)])  // Note: args for pick must be the same in both cases! 
     }
 }
 

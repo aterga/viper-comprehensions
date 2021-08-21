@@ -4,12 +4,12 @@ define NODES(g, p)
 
 //  comp[Int,+,0] n:Int {{ loc(a,n).val || 0 <= i && i < len(a) }}
 
-function snap$Ref$Int(g: Set[Ref]): Map[Ref, Int]
+function snap$Int$Int(g: Set[Ref]): Map[Int, Int]
     requires NODES(g, wildcard)
-    requires !(null in g)
-    ensures domain(result) == g
-    ensures forall u:Ref :: 
-        // { TAU_BODY(u) }
+    ensures domain(result) == domain(lift(g))
+    ensures forall u:Int :: 
+        { TAU_BODY(u) }
         { result[u] }
-            u in g ==> result[u] == BODY(u)
+            u in domain(lift(g)) ==> result[u] == BODY(u)
+
 

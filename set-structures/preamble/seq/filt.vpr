@@ -1,5 +1,5 @@
 function filt$Int(g: Set[Ref]): Set[Ref]
-    requires NODES(g, p)
+    requires NODES(g, wildcard)
     ensures result subset domain(lift(g))
     ensures forall u: Ref :: 
         { u in result }
