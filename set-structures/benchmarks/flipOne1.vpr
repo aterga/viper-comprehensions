@@ -1,0 +1,31 @@
+import "../preamble/generic.vpr"
+import "../preamble/graph/snap.vpr"
+
+
+field val: Int
+define BODY(u) u.val
+define TAU_BODY(u) u.val
+define snap(g) snap$Ref$Int(g)
+define min_all(g) min(snap(g), g)
+
+define update(GRAPH, NODE, $fname, $val) {
+    if (true) {
+        label l0
+        NODE.$fname := $val
+        // label l1
+        assert (GRAPH setminus Set(NODE)) union Set(NODE) == GRAPH
+        assert GRAPH != Set(NODE) ==> old[l0](comp(0, snap(GRAPH), GRAPH setminus Set(NODE))) == comp(0, snap(GRAPH), GRAPH setminus Set(NODE))
+    }
+}
+
+method flipOne_1_1_1(g: Set [Ref], x: Ref, m: Int)
+	requires NODES(g, write)
+	requires x in g
+	requires m == min_all(g) && 0 <= m
+
+    ensures  NODES(g, write)
+    ensures -m == min_all(g)
+{
+    update(g, x, val, -1 * m)
+    // assert false
+}
